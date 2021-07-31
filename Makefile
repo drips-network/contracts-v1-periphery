@@ -1,4 +1,7 @@
-all    :; dapp build
-clean  :; dapp clean
-test   :; dapp test
-deploy :; dapp create FundingContracts
+all     :; dapp build
+clean   :; dapp clean
+update  :; dapp update
+test    :; ./test.sh
+
+
+
