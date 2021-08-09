@@ -79,7 +79,7 @@ contract PoolTest is DSTest {
         assertEq(dai.balanceOf(alice_), t * 1 ether, "incorrect received amount");
     }
 
-    function testSendFuzzTime(uint t) public {
+    function testSendFuzzTime(uint48 t) public {
         // random time between 0 and a month in the future
         if (t > SECONDS_PER_YEAR/12) {
             return;
