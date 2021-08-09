@@ -38,7 +38,7 @@ contract PoolTest is DSTest {
 
     DaiPool pool;
     Dai dai;
-    uint64 constant cycleSecs = 5;
+    uint64 constant cycleSecs = 5 seconds;
 
     // test user
     User public alice;
@@ -46,6 +46,8 @@ contract PoolTest is DSTest {
 
     User public bob;
     address public bob_;
+
+    uint constant SECONDS_PER_YEAR = 31536000;
 
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
@@ -62,15 +64,41 @@ contract PoolTest is DSTest {
     }
 
     function testBasic() public {
-        dai.transfer(bob_, 100 ether);
-        uint daiPerSecond = 1 ether;
         uint lockAmount = 50 ether;
+        // 1 DAI per second
+        uint daiPerSecond = 1 ether;
+
+        dai.transfer(bob_, lockAmount);
+
         bob.send(alice_, daiPerSecond, lockAmount);
 
         uint t = 15 seconds;
         hevm.warp(block.timestamp + t);
 
-        uint receivedAmount = daiPerSecond * t;
+        alice.collect();
+        assertEq(dai.balanceOf(alice_), t * 1 ether, "incorrect received amount");
+    }
+
+    function testSendFuzzTime(uint t) public {
+        // random time between 0 and a month in the future
+        if (t > SECONDS_PER_YEAR/12) {
+            return;
+        }
+
+        dai.transfer(bob_, SECONDS_PER_YEAR * 1 ether);
+
+        // send 0.01 DAI per second
+        uint daiPerSecond = 1 ether * 0.01;
+
+        uint lockAmount = 1_000_000 ether;
+        bob.send(alice_, daiPerSecond, lockAmount);
+
+        hevm.warp(block.timestamp + t);
+
+        uint passedCycles = t/cycleSecs;
+        uint daiPerCycle = daiPerSecond * cycleSecs;
+
+        uint receivedAmount = daiPerCycle * passedCycles;
 
         assertEq(dai.balanceOf(alice_), 0);
         alice.collect();
