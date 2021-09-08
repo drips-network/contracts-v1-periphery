@@ -49,7 +49,6 @@ contract FundingNFT is ERC721, Ownable {
     function mint(address nftReceiver, uint128 topUp, uint128 amtPerSec) external returns (uint256) {
         require(amtPerSec >= minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
-        // uint128 currLeftSecs = cycleSecs - (uint128(block.timestamp) % cycleSecs);
         // todo currLeftSecs*amtPerSec should be immediately transferred to receiver instead of streaming
         require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
 

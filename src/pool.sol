@@ -17,7 +17,7 @@ contract FundingPool is NFTPool {
         address id = nftID(nftRegistry, tokenId);
 
         // not possible to change the rate per second
-        require(senders[id].amtPerSec == amtPerSec
+        require(amtPerSec == AMT_PER_SEC_UNCHANGED
         || senders[id].amtPerSec == 0, "rate-per-second-not-changeable");
 
         // calculate max withdraw
@@ -33,15 +33,14 @@ contract FundingPool is NFTPool {
             return 0;
         }
 
-        uint128 balance = senders[to].startBalance;
-        uint128 sentFunds = uint128(block.timestamp - uint128(senders[to].startTime)) * amtPerSec;
+        uint128 withdrawable_ = withdrawable(to);
         uint128 currLeftSecs = cycleSecs - (uint128(block.timestamp) % cycleSecs);
         uint128 neededCurrCycle = (currLeftSecs * amtPerSec);
-        // entire balance used for streaming
-        if (sentFunds + neededCurrCycle >= balance) {
+
+        if(neededCurrCycle > withdrawable_) {
             return 0;
         }
 
-        return (balance - sentFunds) - (currLeftSecs * amtPerSec);
+        return withdrawable_ - neededCurrCycle;
     }
 }
