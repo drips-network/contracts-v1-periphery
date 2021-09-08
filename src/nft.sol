@@ -16,8 +16,7 @@ interface IFundingPool {
         uint128 topUpAmt,
         uint128 withdraw,
         uint128 amtPerSec,
-        Weights[] calldata updatedReceivers,
-        Weights[] calldata updatedProxies
+        Weights[] calldata updatedReceivers
     ) external;
 
     function erc20() external returns(address);
@@ -65,8 +64,8 @@ contract FundingNFT is ERC721, Ownable {
 
         // start streaming
         Weights[] memory receivers = new Weights[](1);
-        receivers[0] = Weights({receiver: owner(), weight:pool.SENDER_WEIGHTS_SUM_MAX()});
-        pool.updateSender(address(this), uint128(newTokenId), topUp, 0, amtPerSec, receivers, new Weights[](0));
+        receivers[0] = Weights({receiver: owner(), weight:1});
+        pool.updateSender(address(this), uint128(newTokenId), topUp, 0, amtPerSec, receivers);
 
         // transfer nft from contract to receiver
         _transfer(address(this), nftReceiver, newTokenId);

@@ -4,6 +4,7 @@ import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {FundingPool} from "./../pool.sol";
 import {FundingNFT} from "./../nft.sol";
+import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 
 contract RegistryTest is BaseTest {
