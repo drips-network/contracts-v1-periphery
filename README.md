@@ -1,6 +1,9 @@
 # Radicle Community Token Contracts
 The main repository for the Radicle community token.
 
+## Project Documentation
+Documentation for the project can be found [here](https://github.com/radicle-dev/funding-contracts/docs).
+
 ## Getting started
 Radicle Community token uses [dapp.tools](https://github.com/dapphub/dapptools) for development. Please install the `dapp` client. Then, run the following command to install the dependencies:
 
