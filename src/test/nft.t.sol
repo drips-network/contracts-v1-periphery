@@ -16,12 +16,14 @@ contract NFTRegistryTest is BaseTest {
 
     uint128 public minAmtPerSec;
 
+    uint128 public constant DEFAULT_NFT_TYPE = 0;
+
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
         pool = new FundingPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(address(pool), "Dummy Project", "DP", address(this), minAmtPerSec);
+        nftRegistry = new FundingNFT(address(pool), "Dummy Project", "DP", address(this), minAmtPerSec, uint128(1000));
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);
@@ -31,8 +33,9 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 30 ether;
         dai.approve(nftRegistry_, uint(amount));
 
-        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
+        uint tokenId = nftRegistry.mint(address(this),DEFAULT_NFT_TYPE, amount, minAmtPerSec);
         assertEq(nftRegistry.ownerOf(tokenId), address(this));
+        assertEq(nftRegistry.tokenType(tokenId), nftRegistry.DEFAULT_TYPE());
 
         hevm.warp(block.timestamp + CYCLE_SECS);
 
@@ -44,17 +47,27 @@ contract NFTRegistryTest is BaseTest {
     function testFailNonMinAmt() public {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
-        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec-1);
+        nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec-1);
     }
 
     function testFailNoApproval() public {
         uint128 amount = 20 ether;
-        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
+        nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
     }
 
     function testFailNotEnoughTopUp() public {
         uint128 amount = 9 ether;
         dai.approve(nftRegistry_, uint(amount));
-        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
+        nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+    }
+
+    function testAddType() public {
+        uint128 typeId = 1;
+        uint128 limit = 200;
+        uint128 amount = 20 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        nftRegistry.addType(typeId, limit);
+        uint tokenId = nftRegistry.mint(address(this), typeId,  amount, minAmtPerSec);
+        assertEq(nftRegistry.tokenType(tokenId), typeId);
     }
 }

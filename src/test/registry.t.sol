@@ -24,8 +24,9 @@ contract RegistryTest is BaseTest {
         uint128 minAmtPerSec = uint128(fundingInSeconds(10 ether));
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
+        uint128 limit = 1000;
 
-        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(0xA), minAmtPerSec);
+        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(0xA), minAmtPerSec, limit);
         FundingNFT nftRegistry = FundingNFT(nftRegistry_);
         assertEq(nftRegistry.owner(), address(0xA));
         assertEq(radicleRegistry.projects(1), nftRegistry_);

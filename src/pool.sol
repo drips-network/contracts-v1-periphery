@@ -16,6 +16,9 @@ contract FundingPool is NFTPool {
     public override nftOwner(nftRegistry, tokenId) returns(uint128 withdrawn)  {
         address id = nftID(nftRegistry, tokenId);
 
+        // init with receiver can only happen once
+        require(senders[id].amtPerSec == 0);
+
         // not possible to change the rate per second
         require(amtPerSec == AMT_PER_SEC_UNCHANGED
         || senders[id].amtPerSec == 0, "rate-per-second-not-changeable");
