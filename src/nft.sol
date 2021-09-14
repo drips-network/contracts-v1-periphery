@@ -21,7 +21,13 @@ interface IFundingPool {
 
     function erc20() external returns(address);
     function SENDER_WEIGHTS_SUM_MAX() external returns(uint32);
-    function cycleSecs() external returns(uint64);
+    function maxWithdraw(address id) external view returns(uint128);
+    function nftID(address nftRegistry, uint128 tokenId) external pure returns (address id);
+    function cycleSecs() external view returns(uint64);
+    function amtPerSecond(address id) external view returns(uint128);
+    function startTime(address id) external view returns(uint128);
+    function withdrawable(address id) external view returns(uint128);
+    function currLeftSecsInCycle() external view returns(uint128);
 }
 
 interface IERC20 {
@@ -70,7 +76,7 @@ contract FundingNFT is ERC721, Ownable {
     function mint(address nftReceiver, uint128 typeId, uint128 topUp, uint128 amtPerSec) external returns (uint256) {
         require(amtPerSec >= minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
-        // todo currLeftSecs*amtPerSec should be immediately transferred to receiver instead of streaming
+
         require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
 
         require(nftTypes[typeId].limit == UNLIMITED
@@ -99,6 +105,26 @@ contract FundingNFT is ERC721, Ownable {
         _transfer(address(this), nftReceiver, newTokenId);
 
         return newTokenId;
+    }
+
+    function withdrawable(uint128 tokenId) public view returns(uint128) {
+        return pool.maxWithdraw(pool.nftID(address(this), tokenId));
+    }
+
+    function secsUntilInactive(uint128 tokenId) public view returns(uint128) {
+        uint128 withdrawable = pool.withdrawable(pool.nftID(address(this), tokenId));
+        uint128 amtPerSecond = pool.amtPerSecond(pool.nftID(address(this), tokenId));
+
+        uint128 secsLeft = pool.currLeftSecsInCycle();
+        // nft inactive: not enough funds for current cycle
+        if (withdrawable < secsLeft * amtPerSecond) {
+            return 0;
+        }
+
+        uint64 cycleSecs = pool.cycleSecs();
+        uint128 leftFullCycles = withdrawable / pool.cycleSecs();
+
+        return leftFullCycles * cycleSecs + secsLeft;
     }
 
     // todo needs to be implemented
