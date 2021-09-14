@@ -85,6 +85,26 @@ contract FundingNFT is ERC721, Ownable {
         return newTokenId;
     }
 
+    function withdrawable(uint128 tokenId) public view returns(uint128) {
+        return pool.maxWithdraw(pool.nftID(address(this), tokenId));
+    }
+
+    function secsUntilInactive(uint128 tokenId) public view returns(uint128) {
+        uint128 withdrawable = pool.withdrawable(pool.nftID(address(this), tokenId));
+        uint128 amtPerSecond = pool.amtPerSecond(pool.nftID(address(this), tokenId));
+
+        uint128 secsLeft = pool.currLeftSecsInCycle();
+        // nft inactive: not enough funds for current cycle
+        if (withdrawable < secsLeft * amtPerSecond) {
+            return 0;
+        }
+
+        uint64 cycleSecs = pool.cycleSecs();
+        uint128 leftFullCycles = withdrawable / pool.cycleSecs();
+
+        return leftFullCycles * cycleSecs + secsLeft;
+    }
+
     // todo needs to be implemented
     function tokenURI(uint256) public view virtual override returns (string memory)  {
         // test metadata json

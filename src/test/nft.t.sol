@@ -42,6 +42,7 @@ contract NFTRegistryTest is BaseTest {
         dai.approve(nftRegistry_, uint(amount));
 
         uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
         assertEq(nftRegistry.ownerOf(tokenId), address(this));
         assertEq(nftRegistry.tokenType(tokenId), DEFAULT_NFT_TYPE);
 
@@ -49,7 +50,9 @@ contract NFTRegistryTest is BaseTest {
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
         pool.collect(address(this));
-        assertEq(dai.balanceOf(address(this)), preBalance + minAmtPerSec * CYCLE_SECS, "collect-failed");
+        uint128 shouldAmtCollected = preBalance + minAmtPerSec * CYCLE_SECS;
+        assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
+        assertEq(uint(amount-(minAmtPerSec * 2 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
     function testFailNonMinAmt() public {
