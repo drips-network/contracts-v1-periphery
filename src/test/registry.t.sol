@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";

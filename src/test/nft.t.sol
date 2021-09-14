@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import "./../nft.sol";
@@ -33,14 +33,14 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 30 ether;
         dai.approve(nftRegistry_, uint(amount));
 
-        uint tokenId = nftRegistry.mint(address(this),DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
         assertEq(nftRegistry.ownerOf(tokenId), address(this));
         assertEq(nftRegistry.tokenType(tokenId), nftRegistry.DEFAULT_TYPE());
 
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
-        pool.collect();
+        pool.collect(address(this));
         assertEq(dai.balanceOf(address(this)), preBalance + minAmtPerSec * CYCLE_SECS, "collect-failed");
     }
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import {NFTPool, ReceiverWeight, IDai} from "../lib/radicle-streaming/src/NFTPool.sol";
 import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
