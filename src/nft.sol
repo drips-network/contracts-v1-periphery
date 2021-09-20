@@ -53,7 +53,7 @@ contract FundingNFT is ERC721, Ownable {
         require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
 
         require(nftTypes[typeId].limit == UNLIMITED
-            || nftTypes[typeId].minted <= nftTypes[typeId].limit, "nft-type-reached-limit");
+            || nftTypes[typeId].minted < nftTypes[typeId].limit, "nft-type-reached-limit");
 
         //  mint token
         _tokenIds.increment();

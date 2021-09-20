@@ -70,4 +70,46 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId = nftRegistry.mint(address(this), typeId,  amount, minAmtPerSec);
         assertEq(nftRegistry.tokenType(tokenId), typeId);
     }
+
+    function testLimit() public {
+        uint128 typeId = 1;
+        uint128 limit = 5;
+        uint128 amount = 100 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        nftRegistry.addType(typeId, limit);
+        uint tokenId;
+        for (uint i =0; i<limit;i++) {
+            tokenId = nftRegistry.mint(address(this), typeId,  amount/5, minAmtPerSec);
+            assertEq(nftRegistry.tokenType(tokenId), typeId);
+        }
+        (, uint minted) = nftRegistry.nftTypes(typeId);
+        assertEq(minted, limit);
+    }
+
+    function testFailMoreThanLimit() public {
+        uint128 typeId = 1;
+        uint128 limit = 1;
+        uint128 amount = 100 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        nftRegistry.addType(typeId, limit);
+        uint tokenId = nftRegistry.mint(address(this), typeId,  amount/2, minAmtPerSec);
+        assertEq(nftRegistry.tokenType(tokenId), typeId);
+
+        // should fail limit reached
+        nftRegistry.mint(address(this), typeId, amount/2, minAmtPerSec);
+    }
+
+    function testUnlimited() public {
+        uint128 typeId = nftRegistry.UNLIMITED();
+        uint128 limit = 200;
+        uint128 amount = 20 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        nftRegistry.addType(typeId, limit);
+        uint tokenId = nftRegistry.mint(address(this), typeId,  amount, minAmtPerSec);
+        assertEq(nftRegistry.tokenType(tokenId), typeId);
+
+        (, uint minted) = nftRegistry.nftTypes(typeId);
+        assertEq(minted, 1);
+    }
+
 }
