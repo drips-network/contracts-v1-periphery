@@ -23,7 +23,7 @@ contract FundingPool is NFTPool {
 
         // calculate max withdraw
         require(withdraw <= maxWithdraw(id), "withdraw-amount-too-high");
-
+require(updatedReceivers.length == 0 || senders[id].weightCount == 0, "receivers-not-changeable");
         return _sendFromNFT(id,
             topUpAmt, withdraw, amtPerSec, updatedReceivers);
     }
