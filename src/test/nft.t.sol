@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.4;
 
 import "ds-test/test.sol";
 import "./../nft.sol";
@@ -23,7 +23,7 @@ contract NFTRegistryTest is BaseTest {
         dai = new Dai();
         pool = new FundingPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(address(pool), "Dummy Project", "DP", address(this), minAmtPerSec, uint128(1000));
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, uint128(1000));
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);

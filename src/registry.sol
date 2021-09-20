@@ -1,14 +1,14 @@
 pragma solidity ^0.8.7;
 
 import {FundingNFT} from "./nft.sol";
+import {FundingPool} from "./pool.sol";
 
 contract RadicleRegistry {
-    // todo use create2 opcode for deterministic address based on counter as salt (no need for mapping)
     mapping(uint => address) public projects;
     uint public counter;
 
-    address public pool;
-    constructor (address pool_) {
+    FundingPool public pool;
+    constructor (FundingPool pool_) {
         pool = pool_;
     }
 

@@ -17,7 +17,7 @@ contract RegistryTest is BaseTest {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
         fundingPool = new FundingPool(CYCLE_SECS, dai);
-        radicleRegistry = new RadicleRegistry(address(fundingPool));
+        radicleRegistry = new RadicleRegistry(fundingPool);
     }
 
     function testNewNFTRegistry() public {

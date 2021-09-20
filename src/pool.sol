@@ -2,6 +2,7 @@ pragma solidity ^0.8.7;
 
 import {NFTPool, ReceiverWeight, IDai} from "../lib/radicle-streaming/src/NFTPool.sol";
 import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 contract FundingPool is NFTPool {
     constructor(uint64 cycleSecs, IDai dai) NFTPool(cycleSecs, dai) {}
@@ -25,7 +26,7 @@ contract FundingPool is NFTPool {
 
         // calculate max withdraw
         require(withdraw <= maxWithdraw(id), "withdraw-amount-too-high");
-
+require(updatedReceivers.length == 0 || senders[id].weightCount == 0, "receivers-not-changeable");
         return _sendFromNFT(id,
             topUpAmt, withdraw, amtPerSec, updatedReceivers);
     }

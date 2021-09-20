@@ -1,39 +1,18 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.4;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 import "openzeppelin-contracts/utils/Counters.sol";
 
-struct Weights {
-    address receiver;
-    uint32 weight;
-}
-
-interface IFundingPool {
-    function updateSender(
-        address nftRegistry,
-        uint128 tokenId,
-        uint128 topUpAmt,
-        uint128 withdraw,
-        uint128 amtPerSec,
-        Weights[] calldata updatedReceivers
-    ) external;
-
-    function erc20() external returns(address);
-    function SENDER_WEIGHTS_SUM_MAX() external returns(uint32);
-    function cycleSecs() external returns(uint64);
-}
-
-interface IERC20 {
-    function approve(address usr,uint amount) external;
-    function transferFrom(address from, address to, uint amount) external;
-}
+import {FundingPool} from "./pool.sol";
 
 contract FundingNFT is ERC721, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    IFundingPool public pool;
+    FundingPool public pool;
     IERC20 public dai;
 
     // minimum streaming amount per second to mint an NFT
@@ -57,9 +36,9 @@ contract FundingNFT is ERC721, Ownable {
         nftTypes[newTypeId].limit = limit;
     }
 
-    constructor(address pool_, string memory name_, string memory symbol_, address owner_,
+    constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
                     uint128 minAmtPerSec_, uint128 limitFirstEdition) ERC721(name_, symbol_) {
-        pool = IFundingPool(pool_);
+        pool = FundingPool(pool_);
         dai = IERC20(pool.erc20());
         transferOwnership(owner_);
         minAmtPerSec = minAmtPerSec_;
@@ -91,8 +70,8 @@ contract FundingNFT is ERC721, Ownable {
         dai.approve(address(pool), topUp);
 
         // start streaming
-        Weights[] memory receivers = new Weights[](1);
-        receivers[0] = Weights({receiver: owner(), weight:1});
+        ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
+        receivers[0] = ReceiverWeight({receiver: owner(), weight:1});
         pool.updateSender(address(this), uint128(newTokenId), topUp, 0, amtPerSec, receivers);
 
         // transfer nft from contract to receiver
