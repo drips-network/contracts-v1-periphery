@@ -2,16 +2,59 @@ pragma solidity ^0.8.4;
 
 import "ds-test/test.sol";
 import "./../nft.sol";
+import "./../pool.sol";
+import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
+import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 
-contract NFTTest is DSTest {
+
+contract NFTRegistryTest is BaseTest {
     FundingNFT nftRegistry;
+    address nftRegistry_;
+    FundingPool pool;
+    Dai dai;
+    Hevm public hevm;
+
+    uint128 public minAmtPerSec;
 
     function setUp() public {
-        nftRegistry = new FundingNFT("Dummy Project", "DP");
+        hevm = Hevm(HEVM_ADDRESS);
+        dai = new Dai();
+        pool = new FundingPool(CYCLE_SECS, dai);
+        minAmtPerSec =  uint128(fundingInSeconds(10 ether));
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec);
+        nftRegistry_ = address(nftRegistry);
+        // start with a full cycle
+        hevm.warp(0);
     }
 
-    function testMint() public {
-        uint tokenId = nftRegistry.mint(address(0xA));
-        assertEq(nftRegistry.ownerOf(tokenId), address(0xA));
+    function testBasicMint() public {
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+
+        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
+        assertEq(nftRegistry.ownerOf(tokenId), address(this));
+
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        uint128 preBalance = uint128(dai.balanceOf(address(this)));
+        pool.collect();
+        assertEq(dai.balanceOf(address(this)), preBalance + minAmtPerSec * CYCLE_SECS, "collect-failed");
+    }
+
+    function testFailNonMinAmt() public {
+        uint128 amount = 20 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec-1);
+    }
+
+    function testFailNoApproval() public {
+        uint128 amount = 20 ether;
+        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
+    }
+
+    function testFailNotEnoughTopUp() public {
+        uint128 amount = 9 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), amount, minAmtPerSec);
     }
 }
