@@ -29,21 +29,21 @@ contract FundingNFT is ERC721, Ownable {
     uint128 public constant UNLIMITED = type(uint128).max;
     uint128 public constant DEFAULT_TYPE = 0;
 
+    constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
+        uint128 minAmtPerSec_, uint128 limitFirstEdition) ERC721(name_, symbol_) {
+        pool = FundingPool(pool_);
+        dai = pool.erc20();
+        transferOwnership(owner_);
+        minAmtPerSec = minAmtPerSec_;
+
+        nftTypes[DEFAULT_TYPE].limit = limitFirstEdition;
+    }
+
     function addType(uint newTypeId, uint128 limit) external onlyOwner {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "limit-not-greater-than-zero");
 
         nftTypes[newTypeId].limit = limit;
-    }
-
-    constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
-                    uint128 minAmtPerSec_, uint128 limitFirstEdition) ERC721(name_, symbol_) {
-        pool = FundingPool(pool_);
-        dai = IERC20(pool.erc20());
-        transferOwnership(owner_);
-        minAmtPerSec = minAmtPerSec_;
-
-        nftTypes[DEFAULT_TYPE].limit = limitFirstEdition;
     }
 
     function mint(address nftReceiver, uint128 typeId, uint128 topUp, uint128 amtPerSec) external returns (uint256) {
