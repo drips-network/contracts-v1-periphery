@@ -10,7 +10,7 @@ import {FundingPool} from "./pool.sol";
 
 contract FundingNFT is ERC721, Ownable {
     using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+    Counters.Counter private _totalTokens;
 
     FundingPool public pool;
     IERC20 public dai;
@@ -30,13 +30,13 @@ contract FundingNFT is ERC721, Ownable {
     uint128 public constant DEFAULT_TYPE = 0;
 
     constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
-        uint128 minAmtPerSec_, uint128 limitFirstEdition) ERC721(name_, symbol_) {
+        uint128 minAmtPerSec_, uint128 defaultTypeLimit) ERC721(name_, symbol_) {
         pool = FundingPool(pool_);
         dai = pool.erc20();
         transferOwnership(owner_);
         minAmtPerSec = minAmtPerSec_;
 
-        nftTypes[DEFAULT_TYPE].limit = limitFirstEdition;
+        nftTypes[DEFAULT_TYPE].limit = defaultTypeLimit;
     }
 
     function addType(uint newTypeId, uint128 limit) external onlyOwner {
@@ -52,18 +52,17 @@ contract FundingNFT is ERC721, Ownable {
         // todo currLeftSecs*amtPerSec should be immediately transferred to receiver instead of streaming
         require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
 
-        require(nftTypes[typeId].limit == UNLIMITED
-            || nftTypes[typeId].minted < nftTypes[typeId].limit, "nft-type-reached-limit");
+
+        require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
 
         //  mint token
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
+        _totalTokens.increment();
+        uint256 newTokenId = _totalTokens.current();
         _mint(address(this), newTokenId);
 
         if (typeId != DEFAULT_TYPE) {
             tokenType[newTokenId] = typeId;
         }
-        nftTypes[typeId].minted++;
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUp);

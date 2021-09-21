@@ -86,7 +86,7 @@ contract NFTRegistryTest is BaseTest {
         assertEq(minted, limit);
     }
 
-    function testFailMoreThanLimit() public {
+    function testShouldFailMoreThanLimit() public {
         uint128 typeId = 1;
         uint128 limit = 1;
         uint128 amount = 100 ether;
@@ -95,13 +95,20 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId = nftRegistry.mint(address(this), typeId,  amount/2, minAmtPerSec);
         assertEq(nftRegistry.tokenType(tokenId), typeId);
 
-        // should fail limit reached
-        nftRegistry.mint(address(this), typeId, amount/2, minAmtPerSec);
+        (, uint minted) = nftRegistry.nftTypes(typeId);
+        emit log_named_uint("minted", minted);
+
+        // should fail nft-type-reached-limit
+        try nftRegistry.mint(address(this), typeId, amount/2, minAmtPerSec) {
+            assertTrue(false, "Mint hasn't reverted");
+        } catch Error(string memory reason) {
+            assertEq(reason, "nft-type-reached-limit", "Invalid mint revert reason");
+        }
     }
 
     function testUnlimited() public {
-        uint128 typeId = nftRegistry.UNLIMITED();
-        uint128 limit = 200;
+        uint128 typeId = 1;
+        uint128 limit = nftRegistry.UNLIMITED();
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
         nftRegistry.addType(typeId, limit);
