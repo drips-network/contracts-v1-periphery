@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.4;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
@@ -6,6 +7,11 @@ import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
 import {FundingPool} from "./pool.sol";
+
+struct InputNFTType {
+    uint128 nftTypeId;
+    uint128 limit;
+}
 
 contract FundingNFT is ERC721, Ownable {
     FundingPool public pool;
@@ -19,26 +25,31 @@ contract FundingNFT is ERC721, Ownable {
         uint128 minted;
     }
 
-    mapping (uint => NFTType) public nftTypes;
+    mapping (uint128 => NFTType) public nftTypes;
 
-    uint128 public constant UNLIMITED = type(uint128).max;
-    uint128 public constant DEFAULT_TYPE = 0;
+    // events
+    event NewNFTType(uint128 indexed nftType, uint128 limit);
 
     constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
-        uint128 minAmtPerSec_, uint128 defaultTypeLimit) ERC721(name_, symbol_) {
+        uint128 minAmtPerSec_) ERC721(name_, symbol_) {
         pool = FundingPool(pool_);
         dai = pool.erc20();
         transferOwnership(owner_);
         minAmtPerSec = minAmtPerSec_;
-
-        nftTypes[DEFAULT_TYPE].limit = defaultTypeLimit;
     }
 
-    function addType(uint newTypeId, uint128 limit) external onlyOwner {
-        require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
-        require(limit > 0, "limit-not-greater-than-zero");
+    function addTypes(InputNFTType[] memory inputNFTTypes) external onlyOwner {
+        for(uint i = 0; i < inputNFTTypes.length; i++) {
+            uint128 limit = inputNFTTypes[i].limit;
+            uint128 nftTypeId = inputNFTTypes[i].nftTypeId;
+            // nftType already exists or limit is not > 0
+            if (nftTypes[nftTypeId].limit != 0 || limit == 0) {
+                continue;
+            }
 
-        nftTypes[newTypeId].limit = limit;
+            nftTypes[nftTypeId].limit = limit;
+            emit NewNFTType(nftTypeId, limit);
+        }
     }
 
     function createTokenId(uint128 id, uint128 nftType) public pure returns(uint tokenId) {
@@ -52,12 +63,11 @@ contract FundingNFT is ERC721, Ownable {
     function mint(address nftReceiver, uint128 typeId, uint128 topUp, uint128 amtPerSec) external returns (uint256) {
         require(amtPerSec >= minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
-
         require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
-
         require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
 
         uint256 newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
+
         _mint(address(this), newTokenId);
 
         // transfer currency to NFT registry
@@ -76,7 +86,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     // todo needs to be implemented
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
+    function tokenURI(uint256) public view virtual override returns (string memory)  {
         // test metadata json
         return "QmaoWScnNv3PvguuK8mr7HnPaHoAD2vhBLrwiPuqH3Y9zm";
     }
