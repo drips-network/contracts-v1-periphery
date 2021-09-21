@@ -9,7 +9,7 @@ contract FundingPool is NFTPool {
 
     function updateSender(
         address nftRegistry,
-        uint128 tokenId,
+        uint256 tokenId,
         uint128 topUpAmt,
         uint128 withdraw,
         uint128 amtPerSec,
