@@ -106,14 +106,64 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     // todo needs to be implemented
-    function tokenURI(uint256) public view virtual override returns (string memory)  {
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
         // test metadata json
-        return "QmaoWScnNv3PvguuK8mr7HnPaHoAD2vhBLrwiPuqH3Y9zm";
+        return "";
     }
 
     // todo needs to be implemented
     function contractURI() public view returns (string memory) {
         // test project data json
         return "QmdFspZJyihiG4jESmXC72VfkqKKHCnNSZhPsamyWujXxt";
+    }
+}
+
+contract SVG {
+        // todo needs to be implemented
+    function tokenURI(uint256 tokenId) public view returns (string memory)  {
+        // test metadata json
+        return generateImage(tokenId);
+    }
+
+    // todo needs to be implemented
+    function contractURI() public view returns (string memory) {
+        // test project data json
+        return "QmdFspZJyihiG4jESmXC72VfkqKKHCnNSZhPsamyWujXxt";
+    }
+    function generateImage(uint256 tokenId) public view returns (string memory) {
+        return string(
+            abi.encodePacked(
+                '<svg class="svgBody" width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">',
+                '<text x="215" y="80" class="small">Radicle Funding</text>',
+                '<text x="15" y="80" class="medium">EDITION>1</text>',
+                '<text x="15" y="100" class="medium">ID> ',toString(tokenId),'</text>',
+                '</svg>'
+            )
+        );
+    }
+    // from: https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/utils/Strings.sol
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
+     */
+    function toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT licence
+        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
+
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 }
