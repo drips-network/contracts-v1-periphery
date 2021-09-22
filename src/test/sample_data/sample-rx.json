@@ -1,0 +1,15 @@
+{
+  "name": "Radicle Funding - RX - Project",
+  "description": "RX ",
+  "image": "https://ipfs.io/ipfs/QmVoY1djU5JNwKtA6kEB35PrcHY3D71WSQLNTFuXXrYwi5?filename=rx.png",
+  "attributes": [
+    {
+      "trait_type": "Monthly Support",
+      "value": "10 DAI"
+    },
+    {
+      "trait_type": "Expires",
+      "value": "31.12.2022"
+    }
+  ]
+}
