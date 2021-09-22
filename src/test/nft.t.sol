@@ -30,7 +30,7 @@ contract NFTRegistryTest is BaseTest {
         dai = new Dai();
         pool = new FundingPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec);
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, new InputNFTType[](0));
         addNFTType(DEFAULT_NFT_TYPE, 100);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
@@ -78,6 +78,38 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId = nftRegistry.mint(address(this), typeId,  amount, minAmtPerSec);
         assertEq(nftRegistry.tokenType(tokenId), typeId);
         assertEq(bytes32(tokenId), bytes32(0x0000000000000000000000000000000200000000000000000000000000000001));
+    }
+
+    function testShouldFailDoubleNFTTypeId() public {
+        uint128 typeId = 2;
+        uint128 limit = 200;
+        uint128 amount = 20 ether;
+        dai.approve(nftRegistry_, uint(amount));
+
+        InputNFTType[] memory nftTypes = new InputNFTType[](2);
+        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:10});
+        nftTypes[1] = InputNFTType({nftTypeId: 1, limit:10});
+
+        try nftRegistry.addTypes(nftTypes) {
+            assertTrue(false, "Mint hasn't reverted");
+        } catch Error(string memory reason) {
+        assertEq(reason, "nftTypeId-already-in-usage", "Invalid mint revert reason");
+        }
+    }
+
+    function testShouldFailLimitZero() public {
+        uint128 typeId = 2;
+        uint128 limit = 0;
+        uint128 amount = 20 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        InputNFTType[] memory nftTypes = new InputNFTType[](2);
+        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:0});
+
+        try nftRegistry.addTypes(nftTypes) {
+        assertTrue(false, "Mint hasn't reverted");
+        } catch Error(string memory reason) {
+            assertEq(reason, "zero-limit-not-allowed", "Invalid mint revert reason");
+        }
     }
 
     function testLimit() public {

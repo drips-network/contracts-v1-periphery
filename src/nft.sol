@@ -31,21 +31,21 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFTType(uint128 indexed nftType, uint128 limit);
 
     constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
-        uint128 minAmtPerSec_) ERC721(name_, symbol_) {
+        uint128 minAmtPerSec_, InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
         pool = FundingPool(pool_);
         dai = pool.erc20();
-        transferOwnership(owner_);
         minAmtPerSec = minAmtPerSec_;
+        addTypes(inputNFTTypes);
+        transferOwnership(owner_);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) external onlyOwner {
+    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
             uint128 limit = inputNFTTypes[i].limit;
             uint128 nftTypeId = inputNFTTypes[i].nftTypeId;
             // nftType already exists or limit is not > 0
-            if (nftTypes[nftTypeId].limit != 0 || limit == 0) {
-                continue;
-            }
+            require(nftTypes[nftTypeId].limit == 0, "nftTypeId-already-in-usage");
+            require(limit > 0, "zero-limit-not-allowed");
 
             nftTypes[nftTypeId].limit = limit;
             emit NewNFTType(nftTypeId, limit);

@@ -15,13 +15,8 @@ contract RadicleRegistry {
 
     function newProject(string memory name, string memory symbol, address projectOwner, uint128 minAmtPerSec, InputNFTType[] memory inputNFTTypes) public returns(address) {
         counter++;
-        FundingNFT nftRegistry = new FundingNFT(pool, name, symbol, address(this), minAmtPerSec);
+        FundingNFT nftRegistry = new FundingNFT(pool, name, symbol, projectOwner, minAmtPerSec, inputNFTTypes);
         projects[counter] = address(nftRegistry);
-        if(inputNFTTypes.length > 0) {
-            nftRegistry.addTypes(inputNFTTypes);
-        }
-
-        nftRegistry.transferOwnership(projectOwner);
         return address(nftRegistry);
     }
 }
