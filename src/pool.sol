@@ -1,4 +1,5 @@
-pragma solidity ^0.8.4;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity ^0.8.7;
 
 import {NFTPool, ReceiverWeight, IDai} from "../lib/radicle-streaming/src/NFTPool.sol";
 import {IERC721} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
@@ -9,7 +10,7 @@ contract FundingPool is NFTPool {
 
     function updateSender(
         address nftRegistry,
-        uint128 tokenId,
+        uint256 tokenId,
         uint128 topUpAmt,
         uint128 withdraw,
         uint128 amtPerSec,
