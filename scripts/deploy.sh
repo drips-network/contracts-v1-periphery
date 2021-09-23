@@ -19,8 +19,7 @@ addValuesToFile() {
 # build contracts
 dapp build
 
-DEPLOYMENT_FILE=$1
-[ -z "$1" ] && DEPLOYMENT_FILE="./deployment_$(seth chain).json"
+DEPLOYMENT_FILE=${1:-./deployment_$(seth chain).json}
 
 # deploy Test Dai if not defined
 [ -z "$DAI" ] && DAI=$(dapp create Dai)
