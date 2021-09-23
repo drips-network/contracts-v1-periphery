@@ -81,8 +81,6 @@ contract NFTRegistryTest is BaseTest {
     }
 
     function testShouldFailDoubleNFTTypeId() public {
-        uint128 typeId = 2;
-        uint128 limit = 200;
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
 
@@ -98,8 +96,6 @@ contract NFTRegistryTest is BaseTest {
     }
 
     function testShouldFailLimitZero() public {
-        uint128 typeId = 2;
-        uint128 limit = 0;
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
         InputNFTType[] memory nftTypes = new InputNFTType[](2);
