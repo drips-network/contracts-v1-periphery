@@ -85,22 +85,30 @@ contract FundingNFT is ERC721, Ownable {
         return newTokenId;
     }
 
-    function withdrawable(uint128 tokenId) public view returns(uint128) {
+    function withdrawable(uint tokenId) public view returns(uint128) {
         return pool.maxWithdraw(pool.nftID(address(this), tokenId));
     }
 
-    function secsUntilInactive(uint128 tokenId) public view returns(uint128) {
-        uint128 withdrawable = pool.withdrawable(pool.nftID(address(this), tokenId));
-        uint128 amtPerSecond = pool.amtPerSecond(pool.nftID(address(this), tokenId));
+    function amtPerSecond(uint tokenId) public view returns(uint128) {
+        return pool.amtPerSecond(pool.nftID(address(this), tokenId));
+    }
+
+    function secsUntilInactive(uint tokenId) public view returns(uint128) {
+        address poolId = pool.nftID(address(this), tokenId);
+
+        uint128 withdrawable = pool.withdrawable(poolId);
+        uint128 amtPerSecond = pool.amtPerSecond(poolId);
 
         uint128 secsLeft = pool.currLeftSecsInCycle();
+
+        uint128 neededCurrCycle = secsLeft * amtPerSecond;
         // nft inactive: not enough funds for current cycle
-        if (withdrawable < secsLeft * amtPerSecond) {
+        if (withdrawable < neededCurrCycle) {
             return 0;
         }
 
         uint64 cycleSecs = pool.cycleSecs();
-        uint128 leftFullCycles = withdrawable / pool.cycleSecs();
+        uint128 leftFullCycles = (withdrawable-neededCurrCycle) / (pool.cycleSecs() * amtPerSecond);
 
         return leftFullCycles * cycleSecs + secsLeft;
     }

@@ -165,4 +165,54 @@ contract NFTRegistryTest is BaseTest {
         assertEq(resultNFTType, nftType);
     }
 
+    function testSecsUntilInactiveCycleStart() public {
+        // start: beginning of cycle
+        // fundingPerCycle: 10 DAI
+        // amount locked:   30 DAI
+        // [10 DAI] - [10 DAI] - [10 DAI] - 0 DAI leftover
+
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*3, "not-enough-three-cycles");
+
+        // jump in the middle of the cycle
+        hevm.warp(block.timestamp + CYCLE_SECS/2);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "fail-middle-cycle");
+
+        // jump to end
+        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
+    }
+
+    function testSecsUntilInactiveMiddleCycle() public {
+        // start: middle of cycle
+        // fundingPerCycle: 10 DAI
+        // amount locked:   30 DAI
+        // [5 DAI] - [10 DAI] - [10 DAI] - 5 DAI leftover
+
+        // jump in the middle of the cycle
+        hevm.warp(block.timestamp + CYCLE_SECS/2);
+
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "not-enough-three-cycles");
+
+        // jump to end
+        hevm.warp(block.timestamp +  CYCLE_SECS/2);
+
+        hevm.warp(block.timestamp +  CYCLE_SECS*2);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
+
+        // token inactive but withdrawable 5 DAI
+        assertEq(nftRegistry.withdrawable(tokenId), 5 ether, "incorrect-withdrawable-amount");
+        assertEq(nftRegistry.withdrawable(tokenId), nftRegistry.amtPerSecond(tokenId) *  CYCLE_SECS/2, "incorrect-withdrawable-amount");
+    }
+
 }
