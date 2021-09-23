@@ -9,6 +9,8 @@ contract RadicleRegistry {
     uint public counter;
 
     FundingPool public pool;
+    event NewProject(address indexed nftRegistry, address indexed projectOwner, uint128 minAmtPerSec);
+
     constructor (FundingPool pool_) {
         pool = pool_;
     }
@@ -17,6 +19,8 @@ contract RadicleRegistry {
         counter++;
         FundingNFT nftRegistry = new FundingNFT(pool, name, symbol, projectOwner, minAmtPerSec, inputNFTTypes);
         projects[counter] = address(nftRegistry);
+
+        emit NewProject(address(nftRegistry), projectOwner, minAmtPerSec);
         return address(nftRegistry);
     }
 }

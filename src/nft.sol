@@ -29,6 +29,7 @@ contract FundingNFT is ERC721, Ownable {
 
     // events
     event NewNFTType(uint128 indexed nftType, uint128 limit);
+    event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
 
     constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
         uint128 minAmtPerSec_, InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
@@ -81,6 +82,8 @@ contract FundingNFT is ERC721, Ownable {
 
         // transfer nft from contract to receiver
         _transfer(address(this), nftReceiver, newTokenId);
+
+        emit NewNFT(newTokenId, nftReceiver, typeId, topUp, amtPerSec);
 
         return newTokenId;
     }
