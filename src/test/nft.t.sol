@@ -183,9 +183,12 @@ contract NFTRegistryTest is BaseTest {
 
         assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "fail-middle-cycle");
 
-        // jump to end
-        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2);
+        // jump one sec before end
+        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2 - 1);
 
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 1, "not-active");
+        // jump to the end
+        hevm.warp(block.timestamp + 1);
         assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
     }
 
@@ -204,15 +207,18 @@ contract NFTRegistryTest is BaseTest {
 
         assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "not-enough-three-cycles");
 
-        // jump to end
-        hevm.warp(block.timestamp +  CYCLE_SECS/2);
 
-        hevm.warp(block.timestamp +  CYCLE_SECS*2);
+        // jump one sec before end
+        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2 - 1);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 1, "not-active");
+
+        // jump to the end
+        hevm.warp(block.timestamp + 1);
         assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
 
-        // token inactive but withdrawable 5 DAI
-        assertEq(nftRegistry.withdrawable(tokenId), 5 ether, "incorrect-withdrawable-amount");
-        assertEq(nftRegistry.withdrawable(tokenId), nftRegistry.amtPerSecond(tokenId) *  CYCLE_SECS/2, "incorrect-withdrawable-amount");
+        // token inactive but withdrawable ~5 DAI
+        uint totalStreamed = nftRegistry.amtPerSecond(tokenId) * (CYCLE_SECS*2 + CYCLE_SECS/2);
+        assertEq(nftRegistry.withdrawable(tokenId), amount-totalStreamed, "incorrect-withdrawable-amount");
     }
 
 }
