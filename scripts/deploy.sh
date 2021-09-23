@@ -23,7 +23,7 @@ DEPLOYMENT_FILE=${1:-./deployment_$(seth chain).json}
 
 # deploy Test Dai if not defined
 [ -z "$DAI" ] && DAI=$(dapp create Dai)
-[ -z "$CYCLE_SECS" ] && CYCLE_SECS=2592000 #30 * 24 * 60 * 60
+[ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # 1 day cycle
 message Funding Contracts Deployment
 
 echo "Dai Contract: $DAI"
@@ -43,6 +43,7 @@ addValuesToFile $DEPLOYMENT_FILE <<EOF
     "CONTRACT_RADICLE_REGISTRY"  : "$RADICLE_REGISTRY",
     "NETWORK"                    : "$(seth chain)",
     "DEPLOY_ADDRESS"             : "$ETH_FROM",
+    "CYCLE_SECS"                 : "$CYCLE_SECS",
     "COMMIT_HASH"                :  "$(git --git-dir .git rev-parse HEAD )"
 }
 EOF

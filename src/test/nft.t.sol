@@ -30,7 +30,7 @@ contract NFTRegistryTest is BaseTest {
         dai = new Dai();
         pool = new FundingPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, new InputNFTType[](0));
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec);
         addNFTType(DEFAULT_NFT_TYPE, 100);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
