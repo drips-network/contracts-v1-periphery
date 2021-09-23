@@ -93,7 +93,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function amtPerSecond(uint tokenId) public view returns(uint128) {
-        return pool.amtPerSecond(pool.nftID(address(this), tokenId));
+        return pool.getAmtPerSec(pool.nftID(address(this), tokenId));
     }
 
     function secsUntilInactive(uint tokenId) public view returns(uint128) {
@@ -104,9 +104,9 @@ contract FundingNFT is ERC721, Ownable {
             return 0;
         }
 
-        uint128 amtPerSecond = pool.amtPerSecond(poolId);
+        uint128 amtPerSec = pool.getAmtPerSec(poolId);
         uint128 secsLeft = pool.currLeftSecsInCycle();
-        uint128 neededCurrCycle = secsLeft * amtPerSecond;
+        uint128 neededCurrCycle = secsLeft * amtPerSec;
 
         // not enough to cover full current cycle => inactive
         if (amtNotStreamed < neededCurrCycle) {
@@ -115,7 +115,7 @@ contract FundingNFT is ERC721, Ownable {
 
         uint64 cycleSecs = pool.cycleSecs();
         // todo optimize for gas
-        uint128 leftFullCycles = ((amtNotStreamed-neededCurrCycle) / (cycleSecs * amtPerSecond));
+        uint128 leftFullCycles = ((amtNotStreamed-neededCurrCycle) / (cycleSecs * amtPerSec));
         return (leftFullCycles * cycleSecs) + secsLeft;
 
     }

@@ -50,12 +50,4 @@ contract FundingPool is NFTPool {
     function currLeftSecsInCycle() public view returns(uint128) {
         return cycleSecs - (uint128(block.timestamp) % cycleSecs);
     }
-
-    function amtPerSecond(address id) public view returns(uint128) {
-        return senders[id].amtPerSec;
-    }
-
-    function startTime(address id) public view returns(uint64) {
-        return senders[id].startTime;
-    }
 }
