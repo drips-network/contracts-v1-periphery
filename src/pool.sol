@@ -29,20 +29,25 @@ contract FundingPool is NFTPool {
             topUpAmt, withdraw, amtPerSec, updatedReceivers);
     }
 
-    function maxWithdraw(address to) public view returns (uint128) {
-        uint128 amtPerSec = senders[to].amtPerSec;
+    function maxWithdraw(address id) public view returns (uint128) {
+        uint128 amtPerSec = senders[id].amtPerSec;
         if (amtPerSec == 0) {
             return 0;
         }
 
-        uint128 withdrawable_ = withdrawable(to);
-        uint128 currLeftSecs = cycleSecs - (uint128(block.timestamp) % cycleSecs);
-        uint128 neededCurrCycle = (currLeftSecs * amtPerSec);
+        uint128 withdrawable_ = withdrawable(id);
+        uint128 neededCurrCycle = (currLeftSecsInCycle() * amtPerSec);
 
         if(neededCurrCycle > withdrawable_) {
-            return 0;
+            // in this case support is already inactive
+            // the supporter can still withdraw the leftovers
+            return withdrawable_;
         }
 
         return withdrawable_ - neededCurrCycle;
+    }
+
+    function currLeftSecsInCycle() public view returns(uint128) {
+        return cycleSecs - (uint128(block.timestamp) % cycleSecs);
     }
 }

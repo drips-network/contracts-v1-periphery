@@ -88,6 +88,42 @@ contract FundingNFT is ERC721, Ownable {
         return newTokenId;
     }
 
+    function withdrawable(uint tokenId) public view returns(uint128) {
+        return pool.maxWithdraw(pool.nftID(address(this), tokenId));
+    }
+
+    function amtPerSecond(uint tokenId) public view returns(uint128) {
+        return pool.getAmtPerSec(pool.nftID(address(this), tokenId));
+    }
+
+    function secsUntilInactive(uint tokenId) public view returns(uint128) {
+        address poolId = pool.nftID(address(this), tokenId);
+
+        uint128 amtNotStreamed = pool.withdrawable(poolId);
+        if (amtNotStreamed == 0) {
+            return 0;
+        }
+
+        uint128 amtPerSec = pool.getAmtPerSec(poolId);
+        uint128 secsLeft = pool.currLeftSecsInCycle();
+        uint128 neededCurrCycle = secsLeft * amtPerSec;
+
+        // not enough to cover full current cycle => inactive
+        if (amtNotStreamed < neededCurrCycle) {
+            return 0;
+        }
+
+        uint64 cycleSecs = pool.cycleSecs();
+        // todo optimize for gas
+        uint128 leftFullCycles = ((amtNotStreamed-neededCurrCycle) / (cycleSecs * amtPerSec));
+        return (leftFullCycles * cycleSecs) + secsLeft;
+
+    }
+
+    function active(uint tokenId) public view returns(bool) {
+        return secsUntilInactive(tokenId) != 0;
+    }
+
     // todo needs to be implemented
     function tokenURI(uint256) public view virtual override returns (string memory)  {
         // test metadata json

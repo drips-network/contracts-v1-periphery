@@ -42,6 +42,7 @@ contract NFTRegistryTest is BaseTest {
         dai.approve(nftRegistry_, uint(amount));
 
         uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
         assertEq(nftRegistry.ownerOf(tokenId), address(this));
         assertEq(nftRegistry.tokenType(tokenId), DEFAULT_NFT_TYPE);
 
@@ -49,7 +50,9 @@ contract NFTRegistryTest is BaseTest {
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
         pool.collect(address(this));
-        assertEq(dai.balanceOf(address(this)), preBalance + minAmtPerSec * CYCLE_SECS, "collect-failed");
+        uint128 shouldAmtCollected = preBalance + minAmtPerSec * CYCLE_SECS;
+        assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
+        assertEq(uint(amount-(minAmtPerSec * 2 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
     function testFailNonMinAmt() public {
@@ -156,6 +159,62 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId = nftRegistry.createTokenId(id, nftType);
         uint128 resultNFTType = nftRegistry.tokenType(tokenId);
         assertEq(resultNFTType, nftType);
+    }
+
+    function testSecsUntilInactiveCycleStart() public {
+        // start: beginning of cycle
+        // fundingPerCycle: 10 DAI
+        // amount locked:   30 DAI
+        // [10 DAI] - [10 DAI] - [10 DAI] - 0 DAI leftover
+
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*3, "not-enough-three-cycles");
+
+        // jump in the middle of the cycle
+        hevm.warp(block.timestamp + CYCLE_SECS/2);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "fail-middle-cycle");
+
+        // jump one sec before end
+        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2 - 1);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 1, "not-active");
+        // jump to the end
+        hevm.warp(block.timestamp + 1);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
+    }
+
+    function testSecsUntilInactiveMiddleCycle() public {
+        // start: middle of cycle
+        // fundingPerCycle: 10 DAI
+        // amount locked:   30 DAI
+        // [5 DAI] - [10 DAI] - [10 DAI] - 5 DAI leftover
+
+        // jump in the middle of the cycle
+        hevm.warp(block.timestamp + CYCLE_SECS/2);
+
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, minAmtPerSec);
+
+        assertEq(nftRegistry.secsUntilInactive(tokenId), CYCLE_SECS*2 + CYCLE_SECS/2, "not-enough-three-cycles");
+
+
+        // jump one sec before end
+        hevm.warp(block.timestamp +  CYCLE_SECS*2 + CYCLE_SECS/2 - 1);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 1, "not-active");
+
+        // jump to the end
+        hevm.warp(block.timestamp + 1);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), 0, "not-inactive");
+
+        // token inactive but withdrawable ~5 DAI
+        uint totalStreamed = nftRegistry.amtPerSecond(tokenId) * (CYCLE_SECS*2 + CYCLE_SECS/2);
+        assertEq(nftRegistry.withdrawable(tokenId), amount-totalStreamed, "incorrect-withdrawable-amount");
     }
 
 }
