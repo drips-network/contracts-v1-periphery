@@ -14,6 +14,9 @@ struct InputNFTType {
 }
 
 contract FundingNFT is ERC721, Ownable {
+    /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
+    uint128 public constant WITHDRAW_ALL = type(uint128).max;
+
     DaiPool public pool;
     IERC20 public dai;
 
@@ -88,6 +91,23 @@ contract FundingNFT is ERC721, Ownable {
         emit NewNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
 
         return newTokenId;
+    }
+
+    function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
+        dai.transferFrom(msg.sender, address(this), topUpAmt);
+        dai.approve(address(pool), topUpAmt);
+        pool.updateSubSender(tokenId, topUpAmt, 0, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
+    }
+
+    function withdraw(uint tokenId, uint128 withdrawAmt) public onlyTokenHolder(tokenId) returns(uint128 withdrawn) {
+        uint128 withdrawableAmt = withdrawable(tokenId);
+        if (withdrawAmt == WITHDRAW_ALL) {
+            withdrawAmt = withdrawableAmt;
+        } else {
+            require(withdrawAmt <= withdrawableAmt, "withdraw-amount-too-high");
+        }
+        withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
+        dai.transfer(msg.sender, withdrawn);
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {

@@ -216,4 +216,93 @@ contract NFTRegistryTest is BaseTest {
         assertEq(nftRegistry.withdrawable(tokenId), amount-totalStreamed, "incorrect-withdrawable-amount");
     }
 
+    function testTopUp() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        uint balanceBefore = dai.balanceOf(address(this));
+        uint128 withdrawableBefore = nftRegistry.withdrawable(tokenId);
+        uint128 topUp = 1 ether;
+        dai.approve(address(nftRegistry), topUp);
+
+        nftRegistry.topUp(tokenId, topUp);
+
+        uint balanceAfter = dai.balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore - topUp, "invalid-balance");
+        uint128 withdrawableAfter = nftRegistry.withdrawable(tokenId);
+        assertEq(withdrawableAfter, withdrawableBefore + topUp, "invalid-withdrawable");
+    }
+
+    function testTopUpForNotOwnedTokenFails() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        uint128 topUp = 1;
+        dai.approve(address(nftRegistry), topUp);
+        nftRegistry.transferFrom(address(this), address(1234), tokenId);
+
+        try nftRegistry.topUp(tokenId, topUp) {
+            assertTrue(false, "top-up-hasnt-reverted");
+        } catch Error(string memory reason) {
+            assertEq(reason, "not-nft-owner", "invalid-top-up-revert-reason");
+        }
+    }
+
+    function testWithdraw() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        uint balanceBefore = dai.balanceOf(address(this));
+        uint128 withdrawableBefore = nftRegistry.withdrawable(tokenId);
+        uint128 withdrawn = 1 ether;
+
+        uint withdrawnActual = nftRegistry.withdraw(tokenId, withdrawn);
+
+        assertEq(withdrawnActual, withdrawn, "invalid-withdrawn");
+        uint balanceAfter = dai.balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore + withdrawn, "invalid-balance");
+        uint128 withdrawableAfter = nftRegistry.withdrawable(tokenId);
+        assertEq(withdrawableAfter, withdrawableBefore - withdrawn, "invalid-withdrawable");
+    }
+
+    function testWithdrawAll() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        uint balanceBefore = dai.balanceOf(address(this));
+        uint128 withdrawable = nftRegistry.withdrawable(tokenId);
+
+        uint withdrawnActual = nftRegistry.withdraw(tokenId, nftRegistry.WITHDRAW_ALL());
+
+        assertEq(withdrawnActual, withdrawable, "invalid-withdrawn");
+        uint balanceAfter = dai.balanceOf(address(this));
+        assertEq(balanceAfter, balanceBefore + withdrawable, "invalid-balance");
+        assertEq(nftRegistry.withdrawable(tokenId), 0, "invalid-withdrawable");
+    }
+
+    function testWithdrawTooMuchFails() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        uint128 withdrawable = nftRegistry.withdrawable(tokenId);
+
+        try nftRegistry.withdraw(tokenId, withdrawable + 1) {
+            assertTrue(false, "withdraw-hasnt-reverted");
+        } catch Error(string memory reason) {
+            assertEq(reason, "withdraw-amount-too-high", "invalid-withdraw-revert-reason");
+        }
+    }
+
+    function testWithdrawForNotOwnedTokenFails() public {
+        uint128 initial = 30 ether;
+        dai.approve(address(nftRegistry), initial);
+        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, initial, minAmtPerSec);
+        nftRegistry.transferFrom(address(this), address(1234), tokenId);
+
+        try nftRegistry.withdraw(tokenId, 1) {
+            assertTrue(false, "withdraw-hasnt-reverted");
+        } catch Error(string memory reason) {
+            assertEq(reason, "not-nft-owner", "invalid-withdraw-revert-reason");
+        }
+    }
 }
