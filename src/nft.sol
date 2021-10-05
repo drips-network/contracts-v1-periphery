@@ -6,7 +6,7 @@ import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
-import {FundingPool} from "./pool.sol";
+import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 struct InputNFTType {
     uint128 nftTypeId;
@@ -14,7 +14,7 @@ struct InputNFTType {
 }
 
 contract FundingNFT is ERC721, Ownable {
-    FundingPool public pool;
+    DaiPool public pool;
     IERC20 public dai;
 
     // minimum streaming amount per second to mint an NFT
@@ -31,13 +31,18 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFTType(uint128 indexed nftType, uint128 limit);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
 
-    constructor(FundingPool pool_, string memory name_, string memory symbol_, address owner_,
+    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_,
         uint128 minAmtPerSec_, InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
-        pool = FundingPool(pool_);
+        pool = pool_;
         dai = pool.erc20();
         minAmtPerSec = minAmtPerSec_;
         addTypes(inputNFTTypes);
         transferOwnership(owner_);
+    }
+
+    modifier onlyTokenHolder(uint tokenId) {
+        require(ownerOf(tokenId) == msg.sender, "not-nft-owner");
+        _;
     }
 
     function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
@@ -61,51 +66,60 @@ contract FundingNFT is ERC721, Ownable {
         return uint128(tokenId >> 128);
     }
 
-    function mint(address nftReceiver, uint128 typeId, uint128 topUp, uint128 amtPerSec) external returns (uint256) {
+    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) external returns (uint256) {
         require(amtPerSec >= minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
-        require(topUp >= amtPerSec * cycleSecs, "toUp-too-low");
+        require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
         require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
 
         uint256 newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
 
-        _mint(address(this), newTokenId);
+        _mint(nftReceiver, newTokenId);
 
         // transfer currency to NFT registry
-        dai.transferFrom(nftReceiver, address(this), topUp);
-        dai.approve(address(pool), topUp);
+        dai.transferFrom(nftReceiver, address(this), topUpAmt);
+        dai.approve(address(pool), topUpAmt);
 
         // start streaming
         ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
         receivers[0] = ReceiverWeight({receiver: owner(), weight:1});
-        pool.updateSender(address(this), newTokenId, topUp, 0, amtPerSec, receivers);
+        pool.updateSubSender(newTokenId, topUpAmt, 0, amtPerSec, receivers);
 
-        // transfer nft from contract to receiver
-        _transfer(address(this), nftReceiver, newTokenId);
-
-        emit NewNFT(newTokenId, nftReceiver, typeId, topUp, amtPerSec);
+        emit NewNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
 
         return newTokenId;
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {
-        return pool.maxWithdraw(pool.nftID(address(this), tokenId));
+        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
+        if (amtPerSec == 0) {
+            return 0;
+        }
+
+        uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId);
+        uint128 neededCurrCycle = (currLeftSecsInCycle() * amtPerSec);
+
+        if(neededCurrCycle > withdrawable_) {
+            // in this case support is already inactive
+            // the supporter can still withdraw the leftovers
+            return withdrawable_;
+        }
+
+        return withdrawable_ - neededCurrCycle;
     }
 
     function amtPerSecond(uint tokenId) public view returns(uint128) {
-        return pool.getAmtPerSec(pool.nftID(address(this), tokenId));
+        return pool.getAmtPerSecSubSender(address(this), tokenId);
     }
 
     function secsUntilInactive(uint tokenId) public view returns(uint128) {
-        address poolId = pool.nftID(address(this), tokenId);
-
-        uint128 amtNotStreamed = pool.withdrawable(poolId);
+        uint128 amtNotStreamed = pool.withdrawableSubSender(address(this), tokenId);
         if (amtNotStreamed == 0) {
             return 0;
         }
 
-        uint128 amtPerSec = pool.getAmtPerSec(poolId);
-        uint128 secsLeft = pool.currLeftSecsInCycle();
+        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
+        uint128 secsLeft = currLeftSecsInCycle();
         uint128 neededCurrCycle = secsLeft * amtPerSec;
 
         // not enough to cover full current cycle => inactive
@@ -131,8 +145,13 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     // todo needs to be implemented
-    function contractURI() public view returns (string memory) {
+    function contractURI() public pure returns (string memory) {
         // test project data json
         return "QmdFspZJyihiG4jESmXC72VfkqKKHCnNSZhPsamyWujXxt";
+    }
+
+    function currLeftSecsInCycle() public view returns(uint64) {
+        uint64 cycleSecs = pool.cycleSecs();
+        return cycleSecs - (uint64(block.timestamp) % cycleSecs);
     }
 }

@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import "ds-test/test.sol";
 import "./../nft.sol";
-import "./../pool.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 
@@ -11,7 +10,7 @@ import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 contract NFTRegistryTest is BaseTest {
     FundingNFT nftRegistry;
     address nftRegistry_;
-    FundingPool pool;
+    DaiPool pool;
     Dai dai;
     Hevm public hevm;
 
@@ -28,7 +27,7 @@ contract NFTRegistryTest is BaseTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
-        pool = new FundingPool(CYCLE_SECS, dai);
+        pool = new DaiPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
         nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, new InputNFTType[](0));
         addNFTType(DEFAULT_NFT_TYPE, 100);

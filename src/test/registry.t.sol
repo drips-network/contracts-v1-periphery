@@ -3,22 +3,22 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
-import {FundingPool} from "./../pool.sol";
+import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
 import {FundingNFT, InputNFTType} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 
 contract RegistryTest is BaseTest {
     RadicleRegistry radicleRegistry;
-    FundingPool fundingPool;
+    DaiPool pool;
     Dai public dai;
     Hevm public hevm;
 
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
-        fundingPool = new FundingPool(CYCLE_SECS, dai);
-        radicleRegistry = new RadicleRegistry(fundingPool);
+        pool = new DaiPool(CYCLE_SECS, dai);
+        radicleRegistry = new RadicleRegistry(pool);
     }
 
     function testNewNFTRegistry() public {
