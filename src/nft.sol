@@ -10,7 +10,8 @@ import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 struct InputNFTType {
     uint128 nftTypeId;
-    uint128 limit;
+    uint64 limit;
+    uint128 minAmtPerSec;
 }
 
 contract FundingNFT is ERC721, Ownable {
@@ -20,25 +21,22 @@ contract FundingNFT is ERC721, Ownable {
     DaiPool public pool;
     IERC20 public dai;
 
-    // minimum streaming amount per second to mint an NFT
-    uint128 minAmtPerSec;
-
     struct NFTType {
-        uint128 limit;
-        uint128 minted;
+        uint64 limit;
+        uint64 minted;
+        uint128 minAmtPerSec;
     }
 
     mapping (uint128 => NFTType) public nftTypes;
 
     // events
-    event NewNFTType(uint128 indexed nftType, uint128 limit);
+    event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
 
     constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_,
-        uint128 minAmtPerSec_, InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
+        InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
-        minAmtPerSec = minAmtPerSec_;
         addTypes(inputNFTTypes);
         transferOwnership(owner_);
     }
@@ -50,14 +48,16 @@ contract FundingNFT is ERC721, Ownable {
 
     function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
-            uint128 limit = inputNFTTypes[i].limit;
+            uint64 limit = inputNFTTypes[i].limit;
             uint128 nftTypeId = inputNFTTypes[i].nftTypeId;
+            uint128 minAmtPerSec = inputNFTTypes[i].minAmtPerSec;
             // nftType already exists or limit is not > 0
             require(nftTypes[nftTypeId].limit == 0, "nftTypeId-already-in-usage");
             require(limit > 0, "zero-limit-not-allowed");
 
             nftTypes[nftTypeId].limit = limit;
-            emit NewNFTType(nftTypeId, limit);
+            nftTypes[nftTypeId].minAmtPerSec = minAmtPerSec;
+            emit NewNFTType(nftTypeId, limit, minAmtPerSec);
         }
     }
 
@@ -70,7 +70,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) external returns (uint256) {
-        require(amtPerSec >= minAmtPerSec, "amt-per-sec-too-low");
+        require(amtPerSec >= nftTypes[typeId].minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
         require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
