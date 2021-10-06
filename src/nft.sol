@@ -85,12 +85,17 @@ contract FundingNFT is ERC721, Ownable {
 
         // start streaming
         ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
-        receivers[0] = ReceiverWeight({receiver: owner(), weight:1});
+        receivers[0] = ReceiverWeight({receiver: address(this), weight:1});
         pool.updateSubSender(newTokenId, topUpAmt, 0, amtPerSec, receivers);
 
         emit NewNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
 
         return newTokenId;
+    }
+
+    function collect() public onlyOwner {
+        pool.collect(address(this));
+        dai.transfer(owner(), dai.balanceOf(address(this)));
     }
 
     function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
