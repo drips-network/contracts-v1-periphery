@@ -29,7 +29,7 @@ contract NFTRegistryTest is BaseTest {
         dai = new Dai();
         pool = new DaiPool(CYCLE_SECS, dai);
         minAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, new InputNFTType[](0));
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), minAmtPerSec, new InputNFTType[](0), "ipfsHash");
         addNFTType(DEFAULT_NFT_TYPE, 100);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
@@ -323,5 +323,10 @@ contract NFTRegistryTest is BaseTest {
         // influence should stop after token is inactive
         hevm.warp(block.timestamp + 1);
         assertEq(nftRegistry.influence(tokenId), 0);
+    }
+
+    function testChangeIpfsHash() public {
+        nftRegistry.changeIPFSHash("newIpfsHash");
+        assertEq(nftRegistry.contractURI(), "newIpfsHash");
     }
 }
