@@ -185,6 +185,6 @@ contract FundingNFT is ERC721, Ownable {
             return 0;
         }
 
-       return pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs();
+       return pool.getAmtPerSecSubSender(address(this), tokenId);
     }
 }

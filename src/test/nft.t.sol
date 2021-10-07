@@ -314,11 +314,11 @@ contract NFTRegistryTest is BaseTest {
         uint amtPerCycle = 10 ether;
         uint128 amtPerSec = uint128(fundingInSeconds(amtPerCycle));
         uint tokenId = mint(amtPerSec, amtTopUp);
-        assertEq(nftRegistry.influence(tokenId), amtPerSec * pool.cycleSecs());
+        assertEq(nftRegistry.influence(tokenId), amtPerSec);
 
         // enough for 3 cycles
         hevm.warp(block.timestamp + CYCLE_SECS * 3-1);
-        assertEq(nftRegistry.influence(tokenId), amtPerSec * pool.cycleSecs());
+        assertEq(nftRegistry.influence(tokenId), amtPerSec);
 
         // influence should stop after token is inactive
         hevm.warp(block.timestamp + 1);
