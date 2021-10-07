@@ -230,9 +230,9 @@ contract NFTRegistryTest is BaseTest {
         addNFTType(nftType, limit, minAmtPerSec);
         uint128 amount = 30 ether;
         dai.approve(nftRegistry_, uint(amount));
-        uint tokenId = nftRegistry.mint(address(this), nftType, amount, defaultMinAmtPerSec);
+        uint tokenId = nftRegistry.mint(address(this), nftType, amount, minAmtPerSec);
 
-        assertTrue(nftRegistry.secsUntilInactive(tokenId) != 0);
+        assertEq(nftRegistry.secsUntilInactive(tokenId), type(uint128).max);
     }
 
     function testTopUp() public {
