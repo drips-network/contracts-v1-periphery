@@ -223,6 +223,18 @@ contract NFTRegistryTest is BaseTest {
         assertEq(nftRegistry.withdrawable(tokenId), amount-totalStreamed, "incorrect-withdrawable-amount");
     }
 
+    function testZeroAmtPerSec() public {
+        uint128 nftType = 2;
+        uint64 limit = 100;
+        uint128 minAmtPerSec = 0;
+        addNFTType(nftType, limit, minAmtPerSec);
+        uint128 amount = 30 ether;
+        dai.approve(nftRegistry_, uint(amount));
+        uint tokenId = nftRegistry.mint(address(this), nftType, amount, defaultMinAmtPerSec);
+
+        assertTrue(nftRegistry.secsUntilInactive(tokenId) != 0);
+    }
+
     function testTopUp() public {
         uint128 initial = 30 ether;
         dai.approve(address(nftRegistry), initial);
