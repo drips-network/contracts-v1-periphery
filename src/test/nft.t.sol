@@ -36,14 +36,16 @@ contract NFTRegistryTest is BaseTest {
         hevm.warp(0);
     }
 
-    function testBasicMint() public {
-        uint128 amount = 30 ether;
-        dai.approve(nftRegistry_, uint(amount));
-
-        uint tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amount, defaultMinAmtPerSec);
-
+    function mint(uint128 amtPerSec, uint128 amtTopUp) public returns(uint tokenId) {
+        dai.approve(nftRegistry_, uint(amtTopUp));
+        tokenId = nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amtTopUp, amtPerSec);
         assertEq(nftRegistry.ownerOf(tokenId), address(this));
         assertEq(nftRegistry.tokenType(tokenId), DEFAULT_NFT_TYPE);
+    }
+
+    function testBasicMint() public {
+        uint128 amtTopUp = 30 ether;
+        uint tokenId =  mint(defaultMinAmtPerSec, amtTopUp);
 
         hevm.warp(block.timestamp + CYCLE_SECS);
 
@@ -51,7 +53,7 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry.collect();
         uint128 shouldAmtCollected = preBalance + defaultMinAmtPerSec * CYCLE_SECS;
         assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
-        assertEq(uint(amount-(defaultMinAmtPerSec * 2 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
+        assertEq(uint(amtTopUp-(defaultMinAmtPerSec * 2 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
     function testFailNonMinAmt() public {
@@ -106,7 +108,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
         InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:0, minAmtPerSec: defaultMinAmtPerSec});
+        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:0, minAmtPerSec: 10});
 
         try nftRegistry.addTypes(nftTypes) {
         assertTrue(false, "Mint hasn't reverted");
@@ -309,5 +311,21 @@ contract NFTRegistryTest is BaseTest {
         } catch Error(string memory reason) {
             assertEq(reason, "not-nft-owner", "invalid-withdraw-revert-reason");
         }
+    }
+
+    function testInfluence() public {
+        uint128 amtTopUp = 30 ether;
+        uint amtPerCycle = 10 ether;
+        uint128 amtPerSec = uint128(fundingInSeconds(amtPerCycle));
+        uint tokenId = mint(amtPerSec, amtTopUp);
+        assertEq(nftRegistry.influence(tokenId), amtPerSec);
+
+        // enough for 3 cycles
+        hevm.warp(block.timestamp + CYCLE_SECS * 3-1);
+        assertEq(nftRegistry.influence(tokenId), amtPerSec);
+
+        // influence should stop after token is inactive
+        hevm.warp(block.timestamp + 1);
+        assertEq(nftRegistry.influence(tokenId), 0);
     }
 }
