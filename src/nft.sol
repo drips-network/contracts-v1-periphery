@@ -150,44 +150,20 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function activeUntil(uint tokenId) public view returns(uint128) {
-        uint128 amtNotStreamed = pool.withdrawableSubSender(address(this), tokenId);
-        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
-        if (amtNotStreamed < amtPerSec) {
-            return 0;
-        }
-
-        return uint128(block.timestamp + amtNotStreamed/amtPerSec);
-    }
-
-    function secsUntilInactive(uint tokenId) public view returns(uint128) {
         if (nftTypes[tokenType(tokenId)].minAmtPerSec == 0) {
             return type(uint128).max;
         }
-
-        uint128 amtNotStreamed = pool.withdrawableSubSender(address(this), tokenId);
-        if (amtNotStreamed == 0) {
-            return 0;
-        }
-
+        uint128 amtWithdrawable = withdrawable(tokenId);
         uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
-
-        uint128 secsLeft = currLeftSecsInCycle();
-        uint128 neededCurrCycle = secsLeft * amtPerSec;
-
-        // not enough to cover full current cycle => inactive
-        if (amtNotStreamed < neededCurrCycle) {
+        if (amtWithdrawable < amtPerSec) {
             return 0;
         }
 
-        uint64 cycleSecs = pool.cycleSecs();
-        // todo optimize for gas
-        uint128 leftFullCycles = ((amtNotStreamed-neededCurrCycle) / (cycleSecs * amtPerSec));
-        return (leftFullCycles * cycleSecs) + secsLeft;
-
+        return uint128(block.timestamp + amtWithdrawable/amtPerSec);
     }
 
     function active(uint tokenId) public view returns(bool) {
-        return secsUntilInactive(tokenId) != 0;
+        return activeUntil(tokenId) != 0;
     }
 
     // todo needs to be implemented
@@ -202,10 +178,9 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function influence(uint tokenId) public view returns(uint influenceScore) {
-        if(secsUntilInactive(tokenId) == 0) {
-            return 0;
+        if(active(tokenId)) {
+            return pool.getAmtPerSecSubSender(address(this), tokenId);
         }
-
-       return pool.getAmtPerSecSubSender(address(this), tokenId);
+        return 0;
     }
 }
