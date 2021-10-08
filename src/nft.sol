@@ -150,10 +150,14 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function activeUntil(uint tokenId) public view returns(uint128) {
+        if(!_exists(tokenId)) {
+            return 0;
+        }
+
         if (nftTypes[tokenType(tokenId)].minAmtPerSec == 0) {
             return type(uint128).max;
         }
-        uint128 amtWithdrawable = withdrawable(tokenId);
+        uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId);
         uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
         if (amtWithdrawable < amtPerSec) {
             return 0;
@@ -163,7 +167,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function active(uint tokenId) public view returns(bool) {
-        return activeUntil(tokenId) != 0;
+        return activeUntil(tokenId) >= block.timestamp;
     }
 
     // todo needs to be implemented

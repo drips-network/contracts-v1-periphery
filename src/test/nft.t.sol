@@ -289,4 +289,49 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry.changeIPFSHash("newIpfsHash");
         assertEq(nftRegistry.contractURI(), "newIpfsHash");
     }
+
+    function testActiveUntil() public {
+        hevm.warp(block.timestamp + 2 days);
+        uint128 amtTopUp = 30 ether;
+        uint128 amtPerSec = uint128(fundingInSeconds(10 ether));
+        uint tokenId =  mint(amtPerSec, amtTopUp);
+        uint activeUntil = nftRegistry.activeUntil(tokenId);
+
+        hevm.warp(activeUntil - 1);
+        assertTrue(nftRegistry.active(tokenId), "not-active");
+        hevm.warp(block.timestamp + 1 );
+        assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
+    }
+
+    function topUpTooLowShouldFail(uint128 amtPerSec, uint128 amtTopUp) public {
+        dai.approve(nftRegistry_, uint(amtTopUp));
+        try nftRegistry.mint(address(this), DEFAULT_NFT_TYPE, amtTopUp, amtPerSec) {
+            assertTrue(false, "mint-did-not-fail-topUp-too-low");
+        } catch Error(string memory reason) {
+        assertEq(reason, "toUp-too-low", "invalid-error");
+        }
+    }
+
+    function testTopUp(uint128 amtTopUp) public {
+        if (amtTopUp == 0 || amtTopUp > 1 ether * 10**16) {
+            return;
+        }
+        hevm.warp(block.timestamp + 2 days);
+        uint128 amtCycle = 10 ether;
+        uint128 amtPerSec = uint128(fundingInSeconds(amtCycle));
+        if(amtTopUp < amtCycle) {
+            topUpTooLowShouldFail(amtPerSec, amtTopUp);
+        } else {
+            uint tokenId =  mint(amtPerSec, amtTopUp);
+            uint activeUntil = nftRegistry.activeUntil(tokenId);
+
+            hevm.warp(activeUntil - 1);
+            assertTrue(nftRegistry.active(tokenId), "not-active");
+            hevm.warp(block.timestamp + 1 );
+            assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
+        }
+
+    }
+
+
 }
