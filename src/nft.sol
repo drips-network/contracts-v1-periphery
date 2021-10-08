@@ -29,6 +29,8 @@ contract FundingNFT is ERC721, Ownable {
 
     mapping (uint128 => NFTType) public nftTypes;
 
+    mapping (uint => uint64) public minted;
+
     string public contractURI;
 
     // events
@@ -85,6 +87,7 @@ contract FundingNFT is ERC721, Ownable {
         uint256 newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
 
         _mint(nftReceiver, newTokenId);
+        minted[newTokenId] = uint64(block.timestamp);
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
@@ -125,23 +128,35 @@ contract FundingNFT is ERC721, Ownable {
     function withdrawable(uint tokenId) public view returns(uint128) {
         uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
         if (amtPerSec == 0) {
-            return 0;
+            return type(uint128).max;
         }
 
         uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId);
-        uint128 neededCurrCycle = (currLeftSecsInCycle() * amtPerSec);
 
-        if(neededCurrCycle > withdrawable_) {
-            // in this case support is already inactive
-            // the supporter can still withdraw the leftovers
-            return withdrawable_;
+        uint128 amtLocked = 0;
+        uint64 fullCycleTimestamp = minted[tokenId] + uint64(pool.cycleSecs());
+        if(block.timestamp < fullCycleTimestamp) {
+            amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
 
-        return withdrawable_ - neededCurrCycle;
+        //  mint requires topUp to be at least amtPerSec * pool.cycleSecs therefore
+        // if amtLocked > 0 => withdrawable_ > amtLocked
+        return withdrawable_ - amtLocked;
+
     }
 
     function amtPerSecond(uint tokenId) public view returns(uint128) {
         return pool.getAmtPerSecSubSender(address(this), tokenId);
+    }
+
+    function activeUntil(uint tokenId) public view returns(uint128) {
+        uint128 amtNotStreamed = pool.withdrawableSubSender(address(this), tokenId);
+        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
+        if (amtNotStreamed < amtPerSec) {
+            return 0;
+        }
+
+        return uint128(block.timestamp + amtNotStreamed/amtPerSec);
     }
 
     function secsUntilInactive(uint tokenId) public view returns(uint128) {

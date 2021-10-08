@@ -53,7 +53,7 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry.collect();
         uint128 shouldAmtCollected = preBalance + defaultMinAmtPerSec * CYCLE_SECS;
         assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
-        assertEq(uint(amtTopUp-(defaultMinAmtPerSec * 2 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
+        assertEq(uint(amtTopUp-(defaultMinAmtPerSec * 1 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
     function testFailNonMinAmt() public {
