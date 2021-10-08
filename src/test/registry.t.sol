@@ -24,6 +24,7 @@ contract RegistryTest is BaseTest {
     function testNewNFTRegistry() public {
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
+        string memory ipfsHash = "ipfs";
         uint64 limitTypeZero = 100;
         uint64 limitTypeOne = 200;
 
@@ -31,7 +32,7 @@ contract RegistryTest is BaseTest {
         nftTypes[0] = InputNFTType({nftTypeId: 0, limit:limitTypeZero, minAmtPerSec: 10});
         nftTypes[1] = InputNFTType({nftTypeId: 1, limit:limitTypeOne, minAmtPerSec: 20});
 
-        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(0xA), nftTypes);
+        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(0xA), nftTypes, ipfsHash);
         FundingNFT nftRegistry = FundingNFT(nftRegistry_);
         assertEq(nftRegistry.owner(), address(0xA));
         assertEq(radicleRegistry.projects(1), nftRegistry_);

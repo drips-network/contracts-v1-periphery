@@ -29,21 +29,28 @@ contract FundingNFT is ERC721, Ownable {
 
     mapping (uint128 => NFTType) public nftTypes;
 
+    string public contractURI;
+
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
 
     constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_,
-        InputNFTType[] memory inputNFTTypes) ERC721(name_, symbol_) {
+        InputNFTType[] memory inputNFTTypes, string memory ipfsHash) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
         addTypes(inputNFTTypes);
         transferOwnership(owner_);
+        contractURI = ipfsHash;
     }
 
     modifier onlyTokenHolder(uint tokenId) {
         require(ownerOf(tokenId) == msg.sender, "not-nft-owner");
         _;
+    }
+
+    function changeIPFSHash(string memory ipfsHash) public onlyOwner {
+        contractURI = ipfsHash;
     }
 
     function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
@@ -172,12 +179,6 @@ contract FundingNFT is ERC721, Ownable {
     function tokenURI(uint256) public view virtual override returns (string memory)  {
         // test metadata json
         return "QmaoWScnNv3PvguuK8mr7HnPaHoAD2vhBLrwiPuqH3Y9zm";
-    }
-
-    // todo needs to be implemented
-    function contractURI() public pure returns (string memory) {
-        // test project data json
-        return "QmdFspZJyihiG4jESmXC72VfkqKKHCnNSZhPsamyWujXxt";
     }
 
     function currLeftSecsInCycle() public view returns(uint64) {
