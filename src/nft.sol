@@ -163,7 +163,7 @@ contract FundingNFT is ERC721, Ownable {
             return 0;
         }
 
-        return uint128(block.timestamp + amtWithdrawable/amtPerSec);
+        return uint128(block.timestamp + amtWithdrawable/amtPerSec - 1);
     }
 
     function active(uint tokenId) public view returns(bool) {

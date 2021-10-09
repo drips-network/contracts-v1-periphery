@@ -6,13 +6,20 @@ import "./../nft.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 
+contract TestDai is Dai {
+    function mint(uint amount) public {
+        _mint(msg.sender, amount);
+    }
+}
 
 contract NFTRegistryTest is BaseTest {
     FundingNFT nftRegistry;
     address nftRegistry_;
     DaiPool pool;
-    Dai dai;
+    TestDai dai;
     Hevm public hevm;
+
+    uint constant public ONE_TRILLION_DAI = (1 ether * 10**12);
 
     uint128 public defaultMinAmtPerSec;
 
@@ -26,7 +33,7 @@ contract NFTRegistryTest is BaseTest {
 
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
-        dai = new Dai();
+        dai = new TestDai();
         pool = new DaiPool(CYCLE_SECS, dai);
         defaultMinAmtPerSec =  uint128(fundingInSeconds(10 ether));
         nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this), new InputNFTType[](0), "ipfsHash");
@@ -297,7 +304,7 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId =  mint(amtPerSec, amtTopUp);
         uint activeUntil = nftRegistry.activeUntil(tokenId);
 
-        hevm.warp(activeUntil - 1);
+        hevm.warp(activeUntil);
         assertTrue(nftRegistry.active(tokenId), "not-active");
         hevm.warp(block.timestamp + 1 );
         assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
@@ -313,25 +320,28 @@ contract NFTRegistryTest is BaseTest {
     }
 
     function testTopUp(uint128 amtTopUp) public {
-        if (amtTopUp == 0 || amtTopUp > 1 ether * 10**16) {
+        if (amtTopUp == 0 || amtTopUp > ONE_TRILLION_DAI) {
             return;
         }
-        hevm.warp(block.timestamp + 2 days);
+        dai.mint(amtTopUp);
+
+        hevm.warp(block.timestamp + amtTopUp % 30 days);
         uint128 amtCycle = 10 ether;
         uint128 amtPerSec = uint128(fundingInSeconds(amtCycle));
+
         if(amtTopUp < amtCycle) {
             topUpTooLowShouldFail(amtPerSec, amtTopUp);
         } else {
             uint tokenId =  mint(amtPerSec, amtTopUp);
             uint activeUntil = nftRegistry.activeUntil(tokenId);
 
-            hevm.warp(activeUntil - 1);
+            hevm.warp(activeUntil);
             assertTrue(nftRegistry.active(tokenId), "not-active");
-            hevm.warp(block.timestamp + 1 );
+
+            // should be inac
+            hevm.warp(block.timestamp + 1);
             assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
         }
 
     }
-
-
 }
