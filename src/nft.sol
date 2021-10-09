@@ -70,6 +70,14 @@ contract FundingNFT is ERC721, Ownable {
         }
     }
 
+    function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) external onlyOwner {
+        require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
+        require(limit > 0, "limit-not-greater-than-zero");
+
+        nftTypes[newTypeId].minAmtPerSec = minAmtPerSec;
+        nftTypes[newTypeId].limit = limit;
+    }
+
     function createTokenId(uint128 id, uint128 nftType) public pure returns(uint tokenId) {
         return uint((uint(nftType) << 128)) | id;
     }
