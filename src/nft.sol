@@ -37,11 +37,9 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
 
-    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_,
-        InputNFTType[] memory inputNFTTypes, string memory ipfsHash) ERC721(name_, symbol_) {
+    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
-        addTypes(inputNFTTypes);
         transferOwnership(owner_);
         contractURI = ipfsHash;
     }
