@@ -29,19 +29,21 @@ contract FundingNFT is ERC721, Ownable {
 
     mapping (uint128 => NFTType) public nftTypes;
 
+    mapping (uint => uint64) public minted;
+
     string public contractURI;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
+    event NewContractURI(string contractURI);
 
-    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_,
-        InputNFTType[] memory inputNFTTypes, string memory ipfsHash) ERC721(name_, symbol_) {
+    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
-        addTypes(inputNFTTypes);
         transferOwnership(owner_);
         contractURI = ipfsHash;
+        emit NewContractURI(ipfsHash);
     }
 
     modifier onlyTokenHolder(uint tokenId) {
@@ -51,21 +53,22 @@ contract FundingNFT is ERC721, Ownable {
 
     function changeIPFSHash(string memory ipfsHash) public onlyOwner {
         contractURI = ipfsHash;
+        emit NewContractURI(ipfsHash);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
+    function addTypes(InputNFTType[] memory inputNFTTypes) external onlyOwner {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
-            uint64 limit = inputNFTTypes[i].limit;
-            uint128 nftTypeId = inputNFTTypes[i].nftTypeId;
-            uint128 minAmtPerSec = inputNFTTypes[i].minAmtPerSec;
-            // nftType already exists or limit is not > 0
-            require(nftTypes[nftTypeId].limit == 0, "nftTypeId-already-in-usage");
-            require(limit > 0, "zero-limit-not-allowed");
-
-            nftTypes[nftTypeId].limit = limit;
-            nftTypes[nftTypeId].minAmtPerSec = minAmtPerSec;
-            emit NewNFTType(nftTypeId, limit, minAmtPerSec);
+            addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
         }
+    }
+
+    function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) public onlyOwner {
+        require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
+        require(limit > 0, "zero-limit-not-allowed");
+
+        nftTypes[newTypeId].minAmtPerSec = minAmtPerSec;
+        nftTypes[newTypeId].limit = limit;
+        emit NewNFTType(newTypeId, limit, minAmtPerSec);
     }
 
     function createTokenId(uint128 id, uint128 nftType) public pure returns(uint tokenId) {
@@ -85,6 +88,7 @@ contract FundingNFT is ERC721, Ownable {
         uint256 newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
 
         _mint(nftReceiver, newTokenId);
+        minted[newTokenId] = uint64(block.timestamp);
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
@@ -123,56 +127,43 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {
-        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
-        if (amtPerSec == 0) {
-            return 0;
-        }
-
         uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId);
-        uint128 neededCurrCycle = (currLeftSecsInCycle() * amtPerSec);
 
-        if(neededCurrCycle > withdrawable_) {
-            // in this case support is already inactive
-            // the supporter can still withdraw the leftovers
-            return withdrawable_;
+        uint128 amtLocked = 0;
+        uint64 fullCycleTimestamp = minted[tokenId] + uint64(pool.cycleSecs());
+        if(block.timestamp < fullCycleTimestamp) {
+            amtLocked = uint128(fullCycleTimestamp - block.timestamp) * pool.getAmtPerSecSubSender(address(this), tokenId);
         }
 
-        return withdrawable_ - neededCurrCycle;
+        //  mint requires topUp to be at least amtPerSec * pool.cycleSecs therefore
+        // if amtLocked > 0 => withdrawable_ > amtLocked
+        return withdrawable_ - amtLocked;
+
     }
 
     function amtPerSecond(uint tokenId) public view returns(uint128) {
         return pool.getAmtPerSecSubSender(address(this), tokenId);
     }
 
-    function secsUntilInactive(uint tokenId) public view returns(uint128) {
+    function activeUntil(uint tokenId) public view returns(uint128) {
+        if(!_exists(tokenId)) {
+            return 0;
+        }
+
         if (nftTypes[tokenType(tokenId)].minAmtPerSec == 0) {
             return type(uint128).max;
         }
-
-        uint128 amtNotStreamed = pool.withdrawableSubSender(address(this), tokenId);
-        if (amtNotStreamed == 0) {
-            return 0;
-        }
-
+        uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId);
         uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
-
-        uint128 secsLeft = currLeftSecsInCycle();
-        uint128 neededCurrCycle = secsLeft * amtPerSec;
-
-        // not enough to cover full current cycle => inactive
-        if (amtNotStreamed < neededCurrCycle) {
+        if (amtWithdrawable < amtPerSec) {
             return 0;
         }
 
-        uint64 cycleSecs = pool.cycleSecs();
-        // todo optimize for gas
-        uint128 leftFullCycles = ((amtNotStreamed-neededCurrCycle) / (cycleSecs * amtPerSec));
-        return (leftFullCycles * cycleSecs) + secsLeft;
-
+        return uint128(block.timestamp + amtWithdrawable/amtPerSec - 1);
     }
 
     function active(uint tokenId) public view returns(bool) {
-        return secsUntilInactive(tokenId) != 0;
+        return activeUntil(tokenId) >= block.timestamp;
     }
 
     // todo needs to be implemented
@@ -187,10 +178,9 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function influence(uint tokenId) public view returns(uint influenceScore) {
-        if(secsUntilInactive(tokenId) == 0) {
-            return 0;
+        if(active(tokenId)) {
+            return pool.getAmtPerSecSubSender(address(this), tokenId);
         }
-
-       return pool.getAmtPerSecSubSender(address(this), tokenId);
+        return 0;
     }
 }
