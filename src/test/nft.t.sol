@@ -107,7 +107,7 @@ contract NFTRegistryTest is BaseTest {
         try nftRegistry.addTypes(nftTypes) {
             assertTrue(false, "Mint hasn't reverted");
         } catch Error(string memory reason) {
-        assertEq(reason, "nftTypeId-already-in-usage", "Invalid mint revert reason");
+        assertEq(reason, "nft-type-already-exists", "Invalid mint revert reason");
         }
     }
 
