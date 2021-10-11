@@ -6,7 +6,7 @@ import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
-import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
+import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 struct InputNFTType {
     uint128 nftTypeId;
@@ -19,7 +19,7 @@ contract FundingNFT is ERC721, Ownable {
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
 
     DaiPool public pool;
-    IERC20 public dai;
+    IDai public dai;
 
     struct NFTType {
         uint64 limit;
@@ -40,7 +40,7 @@ contract FundingNFT is ERC721, Ownable {
 
     constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash) ERC721(name_, symbol_) {
         pool = pool_;
-        dai = pool.erc20();
+        dai = IDai(address(pool.erc20()));
         transferOwnership(owner_);
         contractURI = ipfsHash;
         emit NewContractURI(ipfsHash);
@@ -79,7 +79,19 @@ contract FundingNFT is ERC721, Ownable {
         return uint128(tokenId >> 128);
     }
 
-    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) external returns (uint256) {
+    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+    external returns (uint256) {
+        dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
+        mint(nftReceiver, typeId, topUpAmt, amtPerSec);
+    }
+
+    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) public returns (uint256) {
         require(amtPerSec >= nftTypes[typeId].minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
@@ -109,10 +121,23 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(owner(), dai.balanceOf(address(this)));
     }
 
+    function topUp(uint tokenId, uint128 topUpAmt,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+    public returns (uint256) {
+        dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
+        topUp(tokenId, topUpAmt);
+    }
+
     function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         dai.approve(address(pool), topUpAmt);
         pool.updateSubSender(tokenId, topUpAmt, 0, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
+
     }
 
     function withdraw(uint tokenId, uint128 withdrawAmt) public onlyTokenHolder(tokenId) returns(uint128 withdrawn) {
