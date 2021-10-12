@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 import "./base64.sol";
+import "openzeppelin-contracts/utils/Strings.sol";
 
 contract MetaDataBuilder {
     function buildMetaData(
@@ -9,17 +10,11 @@ contract MetaDataBuilder {
         uint128 amtPerCycle,
         bool active
     ) public pure returns (string memory) {
-        string memory supportRateString = uint2str(amtPerCycle / 1 ether);
-        string memory tokenIdString = uint2str(tokenId);
+        string memory supportRateString = toTwoDecimals(amtPerCycle);
+        string memory tokenIdString = Strings.toString(tokenId);
         string memory tokenActiveString = "false";
         if (active) {
             tokenActiveString = "true";
-        }
-        uint128 decimal2Digits = (amtPerCycle % 1 ether) / 10**16;
-        if (decimal2Digits > 0) {
-            supportRateString = string(
-                abi.encodePacked(supportRateString, ".", uint2str(decimal2Digits))
-            );
         }
 
         string memory svg = string(
@@ -62,30 +57,20 @@ contract MetaDataBuilder {
                 )
             );
     }
-
-    function uint2str(uint256 _i)
-        internal
-        pure
-        returns (string memory _uintAsString)
-    {
-        if (_i == 0) {
-            return "0";
+    function toTwoDecimals(uint128 number) public pure returns(string memory numberString) {
+        // decimal after the first two decimals are rounded up or down
+        number += 0.005 * 10**18;
+        numberString = Strings.toString(number/1 ether);
+        uint128 twoDecimals = (number % 1 ether) / 10**16;
+        if(twoDecimals > 0) {
+            string memory point = ".";
+            if (twoDecimals > 0 && twoDecimals < 10) {
+                point = ".0";
+            }
+            numberString = string(
+                abi.encodePacked(numberString, point, Strings.toString(twoDecimals))
+            );
         }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
+        return numberString;
     }
 }
