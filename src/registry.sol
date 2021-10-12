@@ -2,22 +2,24 @@
 pragma solidity ^0.8.7;
 
 import {FundingNFT, InputNFTType} from "./nft.sol";
-import {FundingPool} from "./pool.sol";
+import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 contract RadicleRegistry {
     mapping(uint => address) public projects;
     uint public counter;
 
-    FundingPool public pool;
-    constructor (FundingPool pool_) {
+    DaiPool public pool;
+    event NewProject(address indexed nftRegistry, address indexed projectOwner);
+
+    constructor (DaiPool pool_) {
         pool = pool_;
     }
 
-    function newProject(string memory name, string memory symbol, address projectOwner, uint128 minAmtPerSec, InputNFTType[] memory inputNFTTypes) public returns(address) {
+    function newProject(string memory name, string memory symbol, address projectOwner, string memory ipfsHash) public returns(address) {
         counter++;
-        FundingNFT nftRegistry = new FundingNFT(pool, name, symbol, projectOwner, minAmtPerSec, inputNFTTypes);
+        FundingNFT nftRegistry = new FundingNFT(pool, name, symbol, address(projectOwner), ipfsHash);
         projects[counter] = address(nftRegistry);
+        emit NewProject(address(nftRegistry), projectOwner);
         return address(nftRegistry);
     }
 }
-
