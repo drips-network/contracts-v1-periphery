@@ -11,14 +11,14 @@ contract MetaDataBuilder {
     ) public pure returns (string memory) {
         string memory supportRateString = uint2str(amtPerCycle / 1 ether);
         string memory tokenIdString = uint2str(tokenId);
-        string memory tokenActive = "false";
+        string memory tokenActiveString = "false";
         if (active) {
-            tokenActive = "true";
+            tokenActiveString = "true";
         }
-        uint128 decimal = (amtPerCycle % 1 ether) / 10**16;
-        if (decimal > 0) {
+        uint128 decimal2Digits = (amtPerCycle % 1 ether) / 10**16;
+        if (decimal2Digits > 0) {
             supportRateString = string(
-                abi.encodePacked(supportRateString, ".", uint2str(decimal))
+                abi.encodePacked(supportRateString, ".", uint2str(decimal2Digits))
             );
         }
 
@@ -53,7 +53,7 @@ contract MetaDataBuilder {
                     " DAI",
                     '", ',
                     '"active":"',
-                    tokenActive,
+                    tokenActiveString,
                     '", ',
                     '"image": "',
                     "data:image/svg+xml;base64,",
