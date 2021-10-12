@@ -42,15 +42,18 @@ contract MetaDataBuilder {
                                 '{"projectName":"',
                                 projectName,
                                 '", ',
-                                 '{"tokenId":"',
+                                 '"tokenId":"',
                                 tokenIdString,
                                 '", ',
-                                '{"active":"',
+                                '"supportRate":"',
+                                supportRateString, ' DAI',
+                                '", ',
+                                '"active":"',
                                 tokenActive,
                                 '", ',
                                 '"image": "',
                                 "data:image/svg+xml;base64,",
-                                svg,
+                                Base64.encode(bytes(svg)),
                                 '"}'
                             )
                         )
