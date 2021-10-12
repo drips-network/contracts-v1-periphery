@@ -3,8 +3,13 @@ pragma solidity ^0.8.7;
 import "./base64.sol";
 
 contract MetaDataBuilder {
-    function buildMetaData(string memory projectName, uint tokenId, uint128 amtPerCycle, bool active) public pure returns (string memory) {
-        string memory supportRateString = uint2str(amtPerCycle/ 1 ether);
+    function buildMetaData(
+        string memory projectName,
+        uint256 tokenId,
+        uint128 amtPerCycle,
+        bool active
+    ) public pure returns (string memory) {
+        string memory supportRateString = uint2str(amtPerCycle / 1 ether);
         string memory tokenIdString = uint2str(tokenId);
         string memory tokenActive = "false";
         if (active) {
@@ -12,7 +17,9 @@ contract MetaDataBuilder {
         }
         uint128 decimal = (amtPerCycle % 1 ether) / 10**16;
         if (decimal > 0) {
-            supportRateString = string(abi.encodePacked(supportRateString, ".",uint2str(decimal)));
+            supportRateString = string(
+                abi.encodePacked(supportRateString, ".", uint2str(decimal))
+            );
         }
 
         string memory svg = string(
@@ -35,29 +42,23 @@ contract MetaDataBuilder {
         return
             string(
                 abi.encodePacked(
-                    "data:application/json;base64,",
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{"projectName":"',
-                                projectName,
-                                '", ',
-                                 '"tokenId":"',
-                                tokenIdString,
-                                '", ',
-                                '"supportRate":"',
-                                supportRateString, ' DAI',
-                                '", ',
-                                '"active":"',
-                                tokenActive,
-                                '", ',
-                                '"image": "',
-                                "data:image/svg+xml;base64,",
-                                Base64.encode(bytes(svg)),
-                                '"}'
-                            )
-                        )
-                    )
+                    '{"projectName":"',
+                    projectName,
+                    '", ',
+                    '"tokenId":"',
+                    tokenIdString,
+                    '", ',
+                    '"supportRate":"',
+                    supportRateString,
+                    " DAI",
+                    '", ',
+                    '"active":"',
+                    tokenActive,
+                    '", ',
+                    '"image": "',
+                    "data:image/svg+xml;base64,",
+                    Base64.encode(bytes(svg)),
+                    '"}'
                 )
             );
     }
@@ -87,5 +88,4 @@ contract MetaDataBuilder {
         }
         return string(bstr);
     }
-
 }
