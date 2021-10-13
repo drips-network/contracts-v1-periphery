@@ -32,11 +32,14 @@ contract RegistryTest is BaseTest {
         nftTypes[0] = InputNFTType({nftTypeId: 0, limit:limitTypeZero, minAmtPerSec: 10});
         nftTypes[1] = InputNFTType({nftTypeId: 1, limit:limitTypeOne, minAmtPerSec: 20});
 
-        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(this), ipfsHash);
-        FundingNFT nftRegistry = FundingNFT(nftRegistry_);
-        nftRegistry.addTypes(nftTypes);
+        FundingNFT nftRegistry = radicleRegistry.newProject(name, symbol, address(this), ipfsHash);
         assertEq(nftRegistry.owner(), address(this));
-        assertEq(radicleRegistry.projects(1), nftRegistry_);
+        assertEq(nftRegistry.name(), name);
+        assertEq(nftRegistry.symbol(), symbol);
+        assertEq(nftRegistry.contractURI(), ipfsHash);
+        assertEq(address(nftRegistry.pool()), address(pool));
+        nftRegistry.addTypes(nftTypes);
+        assertEq(address(radicleRegistry.projectAddr(0)), address(nftRegistry));
         (uint64 limit, uint64 minted, uint128 minAmtPerSec) = nftRegistry.nftTypes(0);
         assertEq(limit, limitTypeZero);
         assertEq(minAmtPerSec, 10);

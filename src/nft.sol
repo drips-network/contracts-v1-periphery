@@ -18,8 +18,12 @@ contract FundingNFT is ERC721, Ownable {
     /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
 
-    DaiPool public pool;
-    IDai public dai;
+    address public immutable deployer;
+    DaiPool public immutable pool;
+    IDai public immutable dai;
+
+    string internal _name;
+    string internal _symbol;
 
     struct NFTType {
         uint64 limit;
@@ -33,17 +37,28 @@ contract FundingNFT is ERC721, Ownable {
 
     string public contractURI;
 
+    bool private initialized;
+
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
 
-    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash) ERC721(name_, symbol_) {
+    constructor(DaiPool pool_) ERC721("", "") {
+        deployer = msg.sender;
         pool = pool_;
-        dai = IDai(address(pool.erc20()));
-        transferOwnership(owner_);
-        contractURI = ipfsHash;
-        emit NewContractURI(ipfsHash);
+        dai = pool_.dai();
+    }
+
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash) public {
+        require(!initialized, "already-initialized");
+        initialized = true;
+        require(msg.sender == deployer, "not-deployer");
+        _name = name_;
+        _symbol = symbol_;
+        require(owner != address(0), "owner-address-is-zero");
+        _transferOwnership(owner);
+        _changeIPFSHash(ipfsHash);
     }
 
     modifier onlyTokenHolder(uint tokenId) {
@@ -51,7 +66,11 @@ contract FundingNFT is ERC721, Ownable {
         _;
     }
 
-    function changeIPFSHash(string memory ipfsHash) public onlyOwner {
+    function changeIPFSHash(string calldata ipfsHash) public onlyOwner {
+        _changeIPFSHash(ipfsHash);
+    }
+
+    function _changeIPFSHash(string calldata ipfsHash) internal {
         contractURI = ipfsHash;
         emit NewContractURI(ipfsHash);
     }
@@ -88,7 +107,7 @@ contract FundingNFT is ERC721, Ownable {
     )
     external returns (uint256) {
         dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
-        mint(nftReceiver, typeId, topUpAmt, amtPerSec);
+        return mint(nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
     function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) public returns (uint256) {
@@ -128,7 +147,7 @@ contract FundingNFT is ERC721, Ownable {
         bytes32 r,
         bytes32 s
     )
-    public returns (uint256) {
+    public {
         dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
         topUp(tokenId, topUpAmt);
     }
@@ -191,8 +210,16 @@ contract FundingNFT is ERC721, Ownable {
         return activeUntil(tokenId) >= block.timestamp;
     }
 
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
+    }
+
     // todo needs to be implemented
-    function tokenURI(uint256) public view virtual override returns (string memory)  {
+    function tokenURI(uint256) public pure override returns (string memory)  {
         // test metadata json
         return "QmaoWScnNv3PvguuK8mr7HnPaHoAD2vhBLrwiPuqH3Y9zm";
     }
