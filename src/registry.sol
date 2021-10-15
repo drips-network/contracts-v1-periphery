@@ -24,6 +24,9 @@ contract RadicleRegistry {
     }
 
     function projectAddr(uint id) public view returns (FundingNFT) {
+        if (id >= nextId) {
+            return FundingNFT(address(0x0));
+        }
         return FundingNFT(Clones.predictDeterministicAddress(address(fundingNFTTemplate), bytes32(id)));
     }
 }

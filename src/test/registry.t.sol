@@ -21,7 +21,7 @@ contract RegistryTest is BaseTest {
         radicleRegistry = new RadicleRegistry(pool);
     }
 
-    function testNewNFTRegistry() public {
+    function newNewNFTRegistry() public returns(address) {
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
         string memory ipfsHash = "ipfs";
@@ -45,5 +45,16 @@ contract RegistryTest is BaseTest {
         (limit, minted, minAmtPerSec) = nftRegistry.nftTypes(1);
         assertEq(limit, limitTypeOne);
         assertEq(minAmtPerSec, 20);
+        return address(nftRegistry);
+    }
+
+    function testNewNFTRegistry() public {
+        newNewNFTRegistry();
+    }
+
+    function testProjectAddr() public {
+        address nftRegistry = newNewNFTRegistry();
+        assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
+        assertEq(address(radicleRegistry.projectAddr(1)), address(0));
     }
 }
