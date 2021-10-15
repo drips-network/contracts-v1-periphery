@@ -50,15 +50,17 @@ contract FundingNFT is ERC721, Ownable {
         dai = pool_.dai();
     }
 
-    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash) public {
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes) public {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");
         _name = name_;
         _symbol = symbol_;
         require(owner != address(0), "owner-address-is-zero");
-        _transferOwnership(owner);
+
+        _addTypes(inputNFTTypes);
         _changeIPFSHash(ipfsHash);
+        _transferOwnership(owner);
     }
 
     modifier onlyTokenHolder(uint tokenId) {
@@ -75,13 +77,21 @@ contract FundingNFT is ERC721, Ownable {
         emit NewContractURI(ipfsHash);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) external onlyOwner {
+    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
+        _addTypes(inputNFTTypes);
+    }
+
+    function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
-            addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
+            _addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
         }
     }
 
     function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) public onlyOwner {
+        _addType(newTypeId, limit, minAmtPerSec);
+    }
+
+    function _addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) internal {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "zero-limit-not-allowed");
 
