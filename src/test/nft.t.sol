@@ -368,10 +368,11 @@ contract NFTRegistryTest is BaseTest {
         assertEq(dripFraction, shouldDripFraction, "incorrect-drip-fraction");
         hevm.warp(block.timestamp + CYCLE_SECS);
 
-        uint amtProjectA = nftRegistry.collect();
+        (uint128 amtProjectA, uint128 dripped) = nftRegistry.collect();
         assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
-        uint amtProjectB = projectB.collect();
+        (uint128 amtProjectB, ) = projectB.collect();
         assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
+        assertEq(amtProjectB, dripped, "project B didn't receive all drips");
 
         // default project change drips: project B (80%) and arbitraryDripReceiver (20%)
         // dripFraction to 50%
@@ -386,11 +387,11 @@ contract NFTRegistryTest is BaseTest {
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         // default project gets 50%
-        amtProjectA = nftRegistry.collect();
+        (amtProjectA, ) = nftRegistry.collect();
         assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 5, "project A didn't receive drips");
 
         // projectB gets 30%
-        amtProjectB = projectB.collect();
+        (amtProjectB, ) = projectB.collect();
         assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
 
         // arbitraryDripReceiver gets 10%
