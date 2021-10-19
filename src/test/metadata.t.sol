@@ -2,13 +2,13 @@
 pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
-import "../metadata.sol";
+import "../builder.sol";
 
 contract MetaDataTest is DSTest {
-    MetaDataBuilder public metadata;
+    Builder public metadata;
 
     function setUp() public {
-        metadata = new MetaDataBuilder();
+        metadata = new Builder();
     }
 
     function testDigits() public {

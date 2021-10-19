@@ -6,12 +6,12 @@ import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
 import {FundingNFT, InputNFTType} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
-import {MetaDataBuilder} from "./../metadata.sol";
+import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 
 contract RegistryTest is BaseTest {
     RadicleRegistry public radicleRegistry;
-    MetaDataBuilder public metaDataBuilder;
+    Builder public builder;
     DaiPool pool;
     Dai public dai;
     Hevm public hevm;
@@ -20,8 +20,8 @@ contract RegistryTest is BaseTest {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
         pool = new DaiPool(CYCLE_SECS, dai);
-        metaDataBuilder = new MetaDataBuilder();
-        radicleRegistry = new RadicleRegistry(pool,  address(metaDataBuilder), address(this));
+        builder = new Builder();
+        radicleRegistry = new RadicleRegistry(pool,  address(builder), address(this));
     }
 
     function testNewNFTRegistry() public {

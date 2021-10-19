@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import {FundingNFT, InputNFTType} from "./nft.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 
-interface IMetaDataBuilder {
+interface IBuilder {
     function buildMetaData(
         string memory projectName,
         uint256 tokenId,
@@ -18,17 +18,17 @@ contract RadicleRegistry {
     uint                public counter;
     DaiPool             public pool;
     address             public governance;
-    IMetaDataBuilder    public metaDataBuilder;
+    IBuilder            public builder;
 
     event NewProject(address indexed nftRegistry, address indexed projectOwner);
-    event NewMetaDataBuilder(address indexed metadataBuilder);
+    event NewBuilder(address indexed Builder);
 
     modifier onlyGovernance {require(msg.sender == governance, "only-governance"); _;}
 
-    constructor (DaiPool pool_, address metaDataBuilder_, address governance_) {
+    constructor (DaiPool pool_, address Builder_, address governance_) {
         pool = pool_;
         governance = governance_;
-        metaDataBuilder = IMetaDataBuilder(metaDataBuilder_);
+        builder = IBuilder(Builder_);
     }
 
     function newProject(string memory name, string memory symbol, address projectOwner, string memory ipfsHash) public returns(address) {
@@ -39,9 +39,9 @@ contract RadicleRegistry {
         return address(nftRegistry);
     }
 
-    function changeMetaDataBuilder(address newMetadataBuilder) public onlyGovernance {
-        metaDataBuilder =  IMetaDataBuilder(newMetadataBuilder);
-        emit NewMetaDataBuilder(newMetadataBuilder);
+    function changeBuilder(address newBuilder) public onlyGovernance {
+        builder =  IBuilder(newBuilder);
+        emit NewBuilder(newBuilder);
     }
 
     function buildMetaData(
@@ -50,6 +50,6 @@ contract RadicleRegistry {
         uint128 amtPerCycle,
         bool active
     ) public view returns (string memory) {
-        return metaDataBuilder.buildMetaData(projectName, tokenId, amtPerCycle, active);
+        return builder.buildMetaData(projectName, tokenId, amtPerCycle, active);
     }
 }

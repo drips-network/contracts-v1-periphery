@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 import "./base64.sol";
 import "openzeppelin-contracts/utils/Strings.sol";
 
-contract MetaDataBuilder {
+contract Builder {
     function buildMetaData(
         string memory projectName,
         uint256 tokenId,
