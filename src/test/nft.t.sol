@@ -373,22 +373,25 @@ contract NFTRegistryTest is BaseTest {
         uint amtProjectB = projectB.collect();
         assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
 
-        // default project change drips: project B (75%) and arbitraryDripReceiver (25%)
+        // default project change drips: project B (80%) and arbitraryDripReceiver (20%)
+        // dripFraction to 50%
         receivers = new ReceiverWeight[](2);
-        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:3});
+        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:4});
         receivers[1] = ReceiverWeight({receiver: arbitraryDripReceiver, weight:1});
+
+        shouldDripFraction = uint32(pool.DRIPS_FRACTION_MAX()/10 * 5);
         nftRegistry.drip(shouldDripFraction, receivers);
 
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);
 
-        // default project gets 60%
+        // default project gets 50%
         amtProjectA = nftRegistry.collect();
-        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
+        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 5, "project A didn't receive drips");
 
         // projectB gets 30%
         amtProjectB = projectB.collect();
-        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 3, "project B didn't receive drips");
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
 
         // arbitraryDripReceiver gets 10%
         pool.collect(arbitraryDripReceiver);
