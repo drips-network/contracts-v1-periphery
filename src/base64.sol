@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 library Base64 {
     string internal constant TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     function encode(bytes memory data) internal pure returns (string memory) {

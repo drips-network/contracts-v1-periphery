@@ -5,6 +5,7 @@ import "ds-test/test.sol";
 import "./../nft.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
+import {MetaDataBuilder} from "./../metadata.sol";
 
 contract TestDai is Dai {
     function mint(uint amount) public {
@@ -17,7 +18,10 @@ contract NFTRegistryTest is BaseTest {
     address nftRegistry_;
     DaiPool pool;
     TestDai dai;
+    MetaDataBuilder public metaDataBuilder;
+
     Hevm public hevm;
+
 
     uint constant public ONE_TRILLION_DAI = (1 ether * 10**12);
 
@@ -36,7 +40,8 @@ contract NFTRegistryTest is BaseTest {
         dai = new TestDai();
         pool = new DaiPool(CYCLE_SECS, dai);
         defaultMinAmtPerSec =  uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this) ,"ipfsHash");
+        metaDataBuilder = new MetaDataBuilder();
+        nftRegistry = new FundingNFT(pool, "Dummy Project", "DP", address(this) ,"ipfsHash", address(metaDataBuilder));
         addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle

@@ -7,6 +7,7 @@ import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
+import {IMetaDataBuilder} from "./registry.sol";
 
 struct InputNFTType {
     uint128 nftTypeId;
@@ -20,6 +21,7 @@ contract FundingNFT is ERC721, Ownable {
 
     DaiPool public pool;
     IERC20 public dai;
+    IMetaDataBuilder public metaDataBuilder;
 
     struct NFTType {
         uint64 limit;
@@ -28,7 +30,6 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     mapping (uint128 => NFTType) public nftTypes;
-
     mapping (uint => uint64) public minted;
 
     string public contractURI;
@@ -38,11 +39,12 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
 
-    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash) ERC721(name_, symbol_) {
+    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash, address metaDataBuilder_) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
         transferOwnership(owner_);
         contractURI = ipfsHash;
+        metaDataBuilder = IMetaDataBuilder(metaDataBuilder_);
         emit NewContractURI(ipfsHash);
     }
 
@@ -166,10 +168,12 @@ contract FundingNFT is ERC721, Ownable {
         return activeUntil(tokenId) >= block.timestamp;
     }
 
-    // todo needs to be implemented
-    function tokenURI(uint256) public view virtual override returns (string memory)  {
-        // test metadata json
-        return "QmaoWScnNv3PvguuK8mr7HnPaHoAD2vhBLrwiPuqH3Y9zm";
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
+        if(_exists(tokenId)) {
+            return metaDataBuilder.buildMetaData(name(), tokenId,
+                pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId));
+        }
+        return "";
     }
 
     function currLeftSecsInCycle() public view returns(uint64) {
