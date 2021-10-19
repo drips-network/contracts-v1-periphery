@@ -21,7 +21,7 @@ contract FundingNFT is ERC721, Ownable {
 
     DaiPool public pool;
     IERC20 public dai;
-    IBuilder public Builder;
+    IBuilder public builder;
 
     struct NFTType {
         uint64 limit;
@@ -44,7 +44,7 @@ contract FundingNFT is ERC721, Ownable {
         dai = pool.erc20();
         transferOwnership(owner_);
         contractURI = ipfsHash;
-        Builder = IBuilder(Builder_);
+        builder = IBuilder(Builder_);
         emit NewContractURI(ipfsHash);
     }
 
@@ -170,7 +170,7 @@ contract FundingNFT is ERC721, Ownable {
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
         if(_exists(tokenId)) {
-            return Builder.buildMetaData(name(), tokenId,
+            return builder.buildMetaData(name(), tokenId,
                 pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId));
         }
         return "";
