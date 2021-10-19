@@ -350,15 +350,16 @@ contract NFTRegistryTest is BaseTest {
 
     function testDrip() public {
         FundingNFT projectB = new FundingNFT(pool);
+        address arbitraryDripReceiver = address(0x123);
         projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0));
 
-        //supporter for project A
+        //supporter starts to support default project
         mint(defaultMinAmtPerSec, 30 ether);
 
-        // 40%
+        // default project decides 40% should go to drips
         uint32 shouldDripFraction = uint32(pool.DRIPS_FRACTION_MAX()/10 * 4);
 
-        // define drips to project B
+        // first drips should only go to project B
         ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
         receivers[0] = ReceiverWeight({receiver: address(projectB), weight:1});
         nftRegistry.drip(shouldDripFraction, receivers);
@@ -371,5 +372,27 @@ contract NFTRegistryTest is BaseTest {
         assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
         uint amtProjectB = projectB.collect();
         assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
+
+        // default project change drips: project B (75%) and arbitraryDripReceiver (25%)
+        receivers = new ReceiverWeight[](2);
+        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:3});
+        receivers[1] = ReceiverWeight({receiver: arbitraryDripReceiver, weight:1});
+        nftRegistry.drip(shouldDripFraction, receivers);
+
+        // next cycle
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        // default project gets 60%
+        amtProjectA = nftRegistry.collect();
+        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
+
+        // projectB gets 30%
+        amtProjectB = projectB.collect();
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 3, "project B didn't receive drips");
+
+        // arbitraryDripReceiver gets 10%
+        pool.collect(arbitraryDripReceiver);
+        assertEq(dai.balanceOf(arbitraryDripReceiver), (CYCLE_SECS * defaultMinAmtPerSec)/10, "arbitraryDripReceiver didn't receive");
+
     }
 }
