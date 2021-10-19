@@ -5,6 +5,7 @@ import "ds-test/test.sol";
 import "./../nft.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 
 contract TestDai is Dai {
     function mint(uint amount) public {
@@ -345,5 +346,30 @@ contract NFTRegistryTest is BaseTest {
             assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
         }
 
+    }
+
+    function testDrip() public {
+        FundingNFT projectB = new FundingNFT(pool);
+        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0));
+
+        //supporter for project A
+        mint(defaultMinAmtPerSec, 30 ether);
+
+        // 40%
+        uint32 shouldDripFraction = uint32(pool.DRIPS_FRACTION_MAX()/10 * 4);
+
+        // define drips to project B
+        ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
+        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:1});
+        nftRegistry.drip(shouldDripFraction, receivers);
+
+        uint32 dripFraction = pool.getDripsFraction(address(nftRegistry));
+        assertEq(dripFraction, shouldDripFraction, "incorrect-drip-fraction");
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        uint amtProjectA = nftRegistry.collect();
+        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
+        uint amtProjectB = projectB.collect();
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
     }
 }
