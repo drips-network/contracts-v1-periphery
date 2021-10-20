@@ -6,8 +6,8 @@ import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
-import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {IBuilder} from "./registry.sol";
+import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 struct InputNFTType {
     uint128 nftTypeId;
@@ -19,9 +19,13 @@ contract FundingNFT is ERC721, Ownable {
     /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
 
-    DaiPool public pool;
-    IERC20 public dai;
+    address public immutable deployer;
+    DaiPool public immutable pool;
+    IDai public immutable dai;
     IBuilder public builder;
+
+    string internal _name;
+    string internal _symbol;
 
     struct NFTType {
         uint64 limit;
@@ -30,9 +34,12 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     mapping (uint128 => NFTType) public nftTypes;
+
     mapping (uint => uint64) public minted;
 
     string public contractURI;
+
+    bool private initialized;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
@@ -40,13 +47,10 @@ contract FundingNFT is ERC721, Ownable {
     event NewContractURI(string contractURI);
     event NewBuilder(address indexed Builder);
 
- constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash, address builder_) ERC721(name_, symbol_) {
+    constructor(DaiPool pool_) ERC721("", "") {
+        deployer = msg.sender;
         pool = pool_;
-        dai = pool.erc20();
-        transferOwnership(owner_);
-        contractURI = ipfsHash;
-        builder = IBuilder(builder_);
-        emit NewContractURI(ipfsHash);
+        dai = pool_.dai();
     }
 
     modifier onlyTokenHolder(uint tokenId) {
@@ -54,18 +58,43 @@ contract FundingNFT is ERC721, Ownable {
         _;
     }
 
-    function changeIPFSHash(string memory ipfsHash) public onlyOwner {
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes, address builder_) public {
+        require(!initialized, "already-initialized");
+        initialized = true;
+        require(msg.sender == deployer, "not-deployer");
+        require(owner != address(0), "owner-address-is-zero");
+        _name = name_;
+        _symbol = symbol_;
+        builder = IBuilder(builder_);
+        _addTypes(inputNFTTypes);
+        _changeIPFSHash(ipfsHash);
+        _transferOwnership(owner);
+    }
+
+    function changeIPFSHash(string calldata ipfsHash) public onlyOwner {
+        _changeIPFSHash(ipfsHash);
+    }
+
+    function _changeIPFSHash(string calldata ipfsHash) internal {
         contractURI = ipfsHash;
         emit NewContractURI(ipfsHash);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) external onlyOwner {
+    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
+        _addTypes(inputNFTTypes);
+    }
+
+    function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
-            addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
+            _addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
         }
     }
 
     function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) public onlyOwner {
+        _addType(newTypeId, limit, minAmtPerSec);
+    }
+
+    function _addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) internal {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "zero-limit-not-allowed");
 
@@ -82,7 +111,19 @@ contract FundingNFT is ERC721, Ownable {
         return uint128(tokenId >> 128);
     }
 
-    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) external returns (uint256) {
+    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+    external returns (uint256) {
+        dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
+        return mint(nftReceiver, typeId, topUpAmt, amtPerSec);
+    }
+
+    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) public returns (uint256) {
         require(amtPerSec >= nftTypes[typeId].minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
@@ -112,10 +153,23 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(owner(), dai.balanceOf(address(this)));
     }
 
+    function topUp(uint tokenId, uint128 topUpAmt,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+    public {
+        dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
+        topUp(tokenId, topUpAmt);
+    }
+
     function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         dai.approve(address(pool), topUpAmt);
         pool.updateSubSender(tokenId, topUpAmt, 0, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
+
     }
 
     function withdraw(uint tokenId, uint128 withdrawAmt) public onlyTokenHolder(tokenId) returns(uint128 withdrawn) {
@@ -167,6 +221,14 @@ contract FundingNFT is ERC721, Ownable {
 
     function active(uint tokenId) public view returns(bool) {
         return activeUntil(tokenId) >= block.timestamp;
+    }
+
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
     }
 
     function changeBuilder(address newBuilder) public onlyOwner {
