@@ -59,9 +59,11 @@ contract NFTRegistryTest is BaseTest {
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
+        uint128 expectedCollected = defaultMinAmtPerSec * CYCLE_SECS;
+        uint128 collectable = nftRegistry.collectable();
         nftRegistry.collect();
-        uint128 shouldAmtCollected = preBalance + defaultMinAmtPerSec * CYCLE_SECS;
-        assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
+        assertEq(collectable, expectedCollected, "collectable-invalid");
+        assertEq(dai.balanceOf(address(this)), preBalance + expectedCollected, "collect-failed");
         assertEq(uint(amtTopUp-(defaultMinAmtPerSec * 1 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
