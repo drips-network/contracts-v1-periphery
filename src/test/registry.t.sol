@@ -21,7 +21,7 @@ contract RegistryTest is BaseTest {
         radicleRegistry = new RadicleRegistry(pool);
     }
 
-    function testNewNFTRegistry() public {
+    function newNewNFTRegistry() public returns(address) {
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
         string memory ipfsHash = "ipfs";
@@ -32,16 +32,29 @@ contract RegistryTest is BaseTest {
         nftTypes[0] = InputNFTType({nftTypeId: 0, limit:limitTypeZero, minAmtPerSec: 10});
         nftTypes[1] = InputNFTType({nftTypeId: 1, limit:limitTypeOne, minAmtPerSec: 20});
 
-        address nftRegistry_ = radicleRegistry.newProject(name, symbol, address(this), ipfsHash);
-        FundingNFT nftRegistry = FundingNFT(nftRegistry_);
-        nftRegistry.addTypes(nftTypes);
+        FundingNFT nftRegistry = radicleRegistry.newProject(name, symbol, address(this), ipfsHash, nftTypes);
         assertEq(nftRegistry.owner(), address(this));
-        assertEq(radicleRegistry.projects(1), nftRegistry_);
+        assertEq(nftRegistry.name(), name);
+        assertEq(nftRegistry.symbol(), symbol);
+        assertEq(nftRegistry.contractURI(), ipfsHash);
+        assertEq(address(nftRegistry.pool()), address(pool));
+        assertEq(address(radicleRegistry.projectAddr(0)), address(nftRegistry));
         (uint64 limit, uint64 minted, uint128 minAmtPerSec) = nftRegistry.nftTypes(0);
         assertEq(limit, limitTypeZero);
         assertEq(minAmtPerSec, 10);
         (limit, minted, minAmtPerSec) = nftRegistry.nftTypes(1);
         assertEq(limit, limitTypeOne);
         assertEq(minAmtPerSec, 20);
+        return address(nftRegistry);
+    }
+
+    function testNewNFTRegistry() public {
+        newNewNFTRegistry();
+    }
+
+    function testProjectAddr() public {
+        address nftRegistry = newNewNFTRegistry();
+        assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
+        assertEq(address(radicleRegistry.projectAddr(1)), address(0));
     }
 }
