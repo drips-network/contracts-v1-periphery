@@ -19,23 +19,24 @@ contract Builder {
 
         string memory svg = string(
             abi.encodePacked(
-                '<svg class="svgBody" width="300" height="300" viewBox="0 0 300 300" fill="white" xmlns="http://www.w3.org/2000/svg">',
+                '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg">',
                 "<style>svg { background-color: black; }</style>",
-                '<text x="20" y="20" font-family="Courier New, Courier, Lucida Sans Typewriter" class="small"> \xf0\x9f\x8c\xb1 Radicle Funding \xf0\x9f\x8c\xb1 </text>',
-                '<text x="20" y="80" class="medium">Project Name:</text>  <text x="150" y="80" class="small">',
+                // headline
+                '<text x="20" y="35" font-family="Courier New, Courier, Lucida Sans Typewriter" class="small" font-size="25px"> \xf0\x9f\x8c\xb1 Radicle Funding \xf0\x9f\x8c\xb1 </text>',
+                '<text x="50" y="80" class="medium" font-size="15px">Project Name:</text>  <text x="175" y="80" class="small" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="15px">',
                 projectName,
                 "</text>",
-                '<text x="20" y="100" class="medium">NFT-ID:</text><text x="150" y="100" class="small">',
+                '<text x="50" y="110" class="medium" font-size="15px">NFT-ID:</text><text x="175" y="110" class="small" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="15px">',
                 tokenIdString,
                 "</text>",
-                '<text x="20" y="120" class="medium">Support-Rate:</text><text x="150" y="120" class="small">',
+                '<text x="50" y="140" class="medium" font-size="15px">Support-Rate:</text><text x="175" y="140" class="small" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="15px">',
                 supportRateString,
                 " DAI</text>",
                 "</svg>"
             )
         );
         return
-            string(
+            string(abi.encodePacked("data:application/json;base64,", Base64.encode(bytes(
                 abi.encodePacked(
                     '{"projectName":"',
                     projectName,
@@ -54,7 +55,7 @@ contract Builder {
                     "data:image/svg+xml;base64,",
                     Base64.encode(bytes(svg)),
                     '"}'
-                )
+                ))))
             );
     }
     function toTwoDecimals(uint128 number) public pure returns(string memory numberString) {

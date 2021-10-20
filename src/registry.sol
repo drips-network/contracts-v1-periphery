@@ -10,7 +10,7 @@ interface IBuilder {
         uint256 tokenId,
         uint128 amtPerCycle,
         bool active
-    ) external pure returns (string memory);
+    ) external view returns (string memory);
 }
 
 contract RadicleRegistry {

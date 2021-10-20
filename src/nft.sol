@@ -38,13 +38,14 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
+    event NewBuilder(address indexed Builder);
 
-    constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash, address Builder_) ERC721(name_, symbol_) {
+ constructor(DaiPool pool_, string memory name_, string memory symbol_, address owner_, string memory ipfsHash, address builder_) ERC721(name_, symbol_) {
         pool = pool_;
         dai = pool.erc20();
         transferOwnership(owner_);
         contractURI = ipfsHash;
-        builder = IBuilder(Builder_);
+        builder = IBuilder(builder_);
         emit NewContractURI(ipfsHash);
     }
 
@@ -166,6 +167,11 @@ contract FundingNFT is ERC721, Ownable {
 
     function active(uint tokenId) public view returns(bool) {
         return activeUntil(tokenId) >= block.timestamp;
+    }
+
+    function changeBuilder(address newBuilder) public onlyOwner {
+        builder =  IBuilder(newBuilder);
+        emit NewBuilder(newBuilder);
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
