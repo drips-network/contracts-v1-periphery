@@ -17,6 +17,7 @@ contract Builder {
             tokenActiveString = "true";
         }
 
+        // not optimized for gas-usage because it is only a testing svg
         string memory svg = string(
             abi.encodePacked(
                 '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg">',
