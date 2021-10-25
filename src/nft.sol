@@ -145,9 +145,10 @@ contract FundingNFT is ERC721, Ownable {
         return newTokenId;
     }
 
-    function collect() public onlyOwner {
-        pool.collect(address(this));
-        dai.transfer(owner(), dai.balanceOf(address(this)));
+    function collect() public onlyOwner returns (uint128 collected, uint128 dripped) {
+        (, dripped) = pool.collect(address(this));
+        collected = uint128(dai.balanceOf(address(this)));
+        dai.transfer(owner(), collected);
     }
 
     function collectable() public returns (uint128) {
@@ -182,6 +183,10 @@ contract FundingNFT is ERC721, Ownable {
         }
         withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
         dai.transfer(msg.sender, withdrawn);
+    }
+
+    function drip(uint32 dripFraction, ReceiverWeight[] memory receiverWeights) public onlyOwner {
+        pool.updateSender(0, 0, pool.AMT_PER_SEC_UNCHANGED(), dripFraction, receiverWeights);
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {
