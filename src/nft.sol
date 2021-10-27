@@ -151,8 +151,9 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(owner(), collected);
     }
 
-    function collectable() public returns (uint128) {
-        return pool.collectable(address(this)) + uint128(dai.balanceOf(address(this)));
+    function collectable() public returns (uint128 toCollect, uint128 toDrip) {
+        (uint128 toCollect, uint128 toDrip) = pool.collectable(address(this));
+        return (toCollect + uint128(dai.balanceOf(address(this))), toDrip);
     }
 
     function topUp(uint tokenId, uint128 topUpAmt,
