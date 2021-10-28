@@ -42,7 +42,7 @@ contract NFTRegistryTest is BaseTest {
         defaultMinAmtPerSec =  uint128(fundingInSeconds(10 ether));
         nftRegistry = new FundingNFT(pool);
         // testing addNFTType function
-        builder = new Builder();
+        builder = new Builder("");
         nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), address(builder));
         addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
@@ -349,6 +349,12 @@ contract NFTRegistryTest is BaseTest {
             hevm.warp(block.timestamp + 1);
             assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
         }
+    }
 
+    function testTokenURI() public {
+        uint128 amtTopUp = 30 ether;
+        uint tokenId =  mint(defaultMinAmtPerSec, amtTopUp);
+        assertEq(address(builder), address(nftRegistry.builder()), "builder-not-set");
+        nftRegistry.tokenURI(tokenId);
     }
 }

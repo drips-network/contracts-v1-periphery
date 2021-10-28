@@ -8,7 +8,7 @@ contract MetaDataTest is DSTest {
     Builder public metadata;
 
     function setUp() public {
-        metadata = new Builder();
+        metadata = new Builder("");
     }
 
     function testDigits() public {
