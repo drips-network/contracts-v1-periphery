@@ -61,7 +61,7 @@ contract NFTRegistryTest is BaseTest {
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
         uint128 expectedCollected = defaultMinAmtPerSec * CYCLE_SECS;
-        uint128 collectable = nftRegistry.collectable();
+        (uint128 collectable, ) = nftRegistry.collectable();
         nftRegistry.collect();
         assertEq(collectable, expectedCollected, "collectable-invalid");
         assertEq(dai.balanceOf(address(this)), preBalance + expectedCollected, "collect-failed");
