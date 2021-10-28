@@ -5,6 +5,7 @@ import "ds-test/test.sol";
 import "./../nft.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
+import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Builder} from "./../builder.sol";
 
 contract TestDai is Dai {
@@ -64,9 +65,11 @@ contract NFTRegistryTest is BaseTest {
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
+        uint128 expectedCollected = defaultMinAmtPerSec * CYCLE_SECS;
+        (uint128 collectable, ) = nftRegistry.collectable();
         nftRegistry.collect();
-        uint128 shouldAmtCollected = preBalance + defaultMinAmtPerSec * CYCLE_SECS;
-        assertEq(dai.balanceOf(address(this)), shouldAmtCollected, "collect-failed");
+        assertEq(collectable, expectedCollected, "collectable-invalid");
+        assertEq(dai.balanceOf(address(this)), preBalance + expectedCollected, "collect-failed");
         assertEq(uint(amtTopUp-(defaultMinAmtPerSec * 1 * CYCLE_SECS)), uint(nftRegistry.withdrawable(uint128(tokenId))), "incorrect-withdrawable-amount");
     }
 
@@ -349,6 +352,58 @@ contract NFTRegistryTest is BaseTest {
             hevm.warp(block.timestamp + 1);
             assertTrue(nftRegistry.active(tokenId) == false, "not-inactive");
         }
+
+    }
+
+    function testDrip() public {
+        FundingNFT projectB = new FundingNFT(pool);
+        address arbitraryDripReceiver = address(0x123);
+        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), address(builder));
+
+        //supporter starts to support default project
+        mint(defaultMinAmtPerSec, 30 ether);
+
+        // default project decides 40% should go to drips
+        uint32 shouldDripFraction = uint32(pool.DRIPS_FRACTION_MAX()/10 * 4);
+
+        // first drips should only go to project B
+        ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
+        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:1});
+        nftRegistry.drip(shouldDripFraction, receivers);
+
+        uint32 dripFraction = pool.getDripsFraction(address(nftRegistry));
+        assertEq(dripFraction, shouldDripFraction, "incorrect-drip-fraction");
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        (uint128 amtProjectA, uint128 dripped) = nftRegistry.collect();
+        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
+        (uint128 amtProjectB, ) = projectB.collect();
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
+        assertEq(amtProjectB, dripped, "project B didn't receive all drips");
+
+        // default project change drips: project B (80%) and arbitraryDripReceiver (20%)
+        // dripFraction to 50%
+        receivers = new ReceiverWeight[](2);
+        receivers[0] = ReceiverWeight({receiver: address(projectB), weight:4});
+        receivers[1] = ReceiverWeight({receiver: arbitraryDripReceiver, weight:1});
+
+        shouldDripFraction = uint32(pool.DRIPS_FRACTION_MAX()/10 * 5);
+        nftRegistry.drip(shouldDripFraction, receivers);
+
+        // next cycle
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        // default project gets 50%
+        (amtProjectA, ) = nftRegistry.collect();
+        assertEq(amtProjectA, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 5, "project A didn't receive drips");
+
+        // projectB gets 30%
+        (amtProjectB, ) = projectB.collect();
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
+
+        // arbitraryDripReceiver gets 10%
+        pool.collect(arbitraryDripReceiver);
+        assertEq(dai.balanceOf(arbitraryDripReceiver), (CYCLE_SECS * defaultMinAmtPerSec)/10, "arbitraryDripReceiver didn't receive");
     }
 
     function testTokenURI() public {

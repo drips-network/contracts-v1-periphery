@@ -18,7 +18,7 @@ contract Builder {
     constructor(string memory defaultBackground_) {
         defaultBackground = defaultBackground_;
     }
-        
+
     function buildMetaData(
         string memory projectName,
         uint256 tokenId,
@@ -42,7 +42,7 @@ contract Builder {
     }
 
 
-    function _buildSVG(Data memory data) internal view returns (string memory) {
+    function _buildSVG(Data memory data) internal pure returns (string memory) {
         // not optimized for gas-usage because it is only a testing svg
         return string(
             abi.encodePacked(
