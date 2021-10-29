@@ -4,6 +4,15 @@ pragma solidity ^0.8.7;
 import "./base64.sol";
 import "openzeppelin-contracts/utils/Strings.sol";
 
+interface IBuilder {
+    function buildMetaData(
+        string memory projectName,
+        uint256 tokenId,
+        uint128 amtPerCycle,
+        bool active
+    ) external view returns (string memory);
+}
+
 contract Builder {
     string public defaultBackground =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'

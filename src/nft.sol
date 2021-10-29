@@ -6,7 +6,7 @@ import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
-import {IBuilder} from "./registry.sol";
+import {IBuilder} from "./builder.sol";
 import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
 
 struct InputNFTType {
