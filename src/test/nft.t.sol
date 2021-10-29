@@ -43,7 +43,7 @@ contract NFTRegistryTest is BaseTest {
         defaultMinAmtPerSec =  uint128(fundingInSeconds(10 ether));
         nftRegistry = new FundingNFT(pool);
         // testing addNFTType function
-        builder = new Builder("");
+        builder = new Builder();
         nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), address(builder));
         addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);

@@ -20,7 +20,7 @@ contract RegistryTest is BaseTest {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
         pool = new DaiPool(CYCLE_SECS, dai);
-        builder = new Builder("");
+        builder = new Builder();
         radicleRegistry = new RadicleRegistry(pool,  address(builder), address(this));
     }
 
