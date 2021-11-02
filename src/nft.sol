@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {ReceiverWeight} from "../lib/radicle-streaming/src/Pool.sol";
+import {Receiver} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
 import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
@@ -39,10 +39,13 @@ contract FundingNFT is ERC721, Ownable {
 
     bool private initialized;
 
+    mapping (uint256 => uint128) public amtPerSecond;
+
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
+    event DripsUpdated(uint32 dripFraction, Receiver[] drips);
 
     constructor(DaiPool pool_) ERC721("", "") {
         deployer = msg.sender;
@@ -130,30 +133,29 @@ contract FundingNFT is ERC721, Ownable {
 
         _mint(nftReceiver, newTokenId);
         minted[newTokenId] = uint64(block.timestamp);
+        amtPerSecond[newTokenId] = amtPerSec;
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
         dai.approve(address(pool), topUpAmt);
 
         // start streaming
-        ReceiverWeight[] memory receivers = new ReceiverWeight[](1);
-        receivers[0] = ReceiverWeight({receiver: address(this), weight:1});
-        pool.updateSubSender(newTokenId, topUpAmt, 0, amtPerSec, receivers);
+        pool.updateSubSender(newTokenId, topUpAmt, 0, _receivers(0), _receivers(amtPerSec));
 
         emit NewNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
 
         return newTokenId;
     }
 
-    function collect() public onlyOwner returns (uint128 collected, uint128 dripped) {
-        (, dripped) = pool.collect(address(this));
+    function collect(Receiver[] calldata currDrips) public onlyOwner returns (uint128 collected, uint128 dripped) {
+        (, dripped) = pool.collect(address(this), currDrips);
         collected = uint128(dai.balanceOf(address(this)));
         dai.transfer(owner(), collected);
     }
 
-    function collectable() public returns (uint128 toCollect, uint128 toDrip) {
-        (uint128 toCollect, uint128 toDrip) = pool.collectable(address(this));
-        return (toCollect + uint128(dai.balanceOf(address(this))), toDrip);
+    function collectable(Receiver[] calldata currDrips) public view returns (uint128 toCollect, uint128 toDrip) {
+        (toCollect, toDrip) = pool.collectable(address(this), currDrips);
+        toCollect += uint128(dai.balanceOf(address(this)));
     }
 
     function topUp(uint tokenId, uint128 topUpAmt,
@@ -171,8 +173,8 @@ contract FundingNFT is ERC721, Ownable {
     function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         dai.approve(address(pool), topUpAmt);
-        pool.updateSubSender(tokenId, topUpAmt, 0, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
-
+        Receiver[] memory receivers = _tokenReceivers(tokenId);
+        pool.updateSubSender(tokenId, topUpAmt, 0, receivers, receivers);
     }
 
     function withdraw(uint tokenId, uint128 withdrawAmt) public onlyTokenHolder(tokenId) returns(uint128 withdrawn) {
@@ -182,21 +184,24 @@ contract FundingNFT is ERC721, Ownable {
         } else {
             require(withdrawAmt <= withdrawableAmt, "withdraw-amount-too-high");
         }
-        withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, pool.AMT_PER_SEC_UNCHANGED(), new ReceiverWeight[](0));
+        Receiver[] memory receivers = _tokenReceivers(tokenId);
+        withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, receivers, receivers);
         dai.transfer(msg.sender, withdrawn);
     }
 
-    function drip(uint32 dripFraction, ReceiverWeight[] memory receiverWeights) public onlyOwner {
-        pool.updateSender(0, 0, pool.AMT_PER_SEC_UNCHANGED(), dripFraction, receiverWeights);
+    function drip(uint32 dripFraction, Receiver[] calldata currDrips, Receiver[] calldata newDrips) public onlyOwner {
+        pool.updateSender(0, 0, dripFraction, currDrips, newDrips);
+        emit DripsUpdated(dripFraction, newDrips);
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {
-        uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId);
+        uint128 amtPerSec = amtPerSecond[tokenId];
+        uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
 
         uint128 amtLocked = 0;
         uint64 fullCycleTimestamp = minted[tokenId] + uint64(pool.cycleSecs());
         if(block.timestamp < fullCycleTimestamp) {
-            amtLocked = uint128(fullCycleTimestamp - block.timestamp) * pool.getAmtPerSecSubSender(address(this), tokenId);
+            amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
 
         //  mint requires topUp to be at least amtPerSec * pool.cycleSecs therefore
@@ -205,24 +210,15 @@ contract FundingNFT is ERC721, Ownable {
 
     }
 
-    function amtPerSecond(uint tokenId) public view returns(uint128) {
-        return pool.getAmtPerSecSubSender(address(this), tokenId);
-    }
-
     function activeUntil(uint tokenId) public view returns(uint128) {
         if(!_exists(tokenId)) {
             return 0;
         }
-
         if (nftTypes[tokenType(tokenId)].minAmtPerSec == 0) {
             return type(uint128).max;
         }
-        uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId);
-        uint128 amtPerSec = pool.getAmtPerSecSubSender(address(this), tokenId);
-        if (amtWithdrawable < amtPerSec) {
-            return 0;
-        }
-
+        uint128 amtPerSec = amtPerSecond[tokenId];
+        uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
         return uint128(block.timestamp + amtWithdrawable/amtPerSec - 1);
     }
 
@@ -251,8 +247,18 @@ contract FundingNFT is ERC721, Ownable {
 
     function influence(uint tokenId) public view returns(uint influenceScore) {
         if(active(tokenId)) {
-            return pool.getAmtPerSecSubSender(address(this), tokenId);
+            return amtPerSecond[tokenId];
         }
         return 0;
+    }
+
+    function _tokenReceivers(uint256 tokenId) internal view returns (Receiver[] memory receivers) {
+        return _receivers(amtPerSecond[tokenId]);
+    }
+
+    function _receivers(uint128 amtPerSec) internal view returns (Receiver[] memory receivers) {
+        if (amtPerSec == 0) return new Receiver[](0);
+        receivers = new Receiver[](1);
+        receivers[0] = Receiver(address(this), amtPerSec);
     }
 }
