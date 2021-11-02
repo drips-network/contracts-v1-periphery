@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+// solhint-disable quotes
 pragma solidity ^0.8.7;
 import "./base64.sol";
 import "openzeppelin-contracts/utils/Strings.sol";

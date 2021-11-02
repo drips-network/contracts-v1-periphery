@@ -18,7 +18,6 @@ jobs:
         run: nix-shell --run "make install"
       - name: lint
         run: nix-shell --run "make lint"
-        continue-on-error: true
       - name: test
         if: ${{ github.event_name == 'pull_request' }}
         run: nix-shell --run "make test"

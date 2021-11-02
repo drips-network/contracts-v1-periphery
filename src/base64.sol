@@ -2,9 +2,9 @@
 pragma solidity ^0.8.7;
 
 library Base64 {
-    string internal constant TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    string internal constant TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     function encode(bytes memory data) internal pure returns (string memory) {
-        if (data.length == 0) return '';
+        if (data.length == 0) return "";
 
         // load the table into memory
         string memory table = TABLE;
@@ -15,6 +15,7 @@ library Base64 {
         // add some extra buffer at the end required for the writing
         string memory result = new string(encodedLen + 32);
 
+        // solhint-disable-next-line no-inline-assembly
         assembly {
         // set the actual output length
             mstore(result, encodedLen)
@@ -30,6 +31,7 @@ library Base64 {
             let resultPtr := add(result, 32)
 
         // run over the input, 3 bytes at a time
+        // solhint-disable-next-line no-empty-blocks
             for {} lt(dataPtr, endPtr) {}
             {
                 dataPtr := add(dataPtr, 3)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import "./../nft.sol";
@@ -14,10 +14,10 @@ contract TestDai is Dai {
 }
 
 contract NFTRegistryTest is BaseTest {
-    FundingNFT nftRegistry;
-    address nftRegistry_;
-    DaiPool pool;
-    TestDai dai;
+    FundingNFT public nftRegistry;
+    address public nftRegistry_;
+    DaiPool public pool;
+    TestDai public dai;
     Hevm public hevm;
 
     uint constant public ONE_TRILLION_DAI = (1 ether * 10**12);

@@ -9,8 +9,8 @@ import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 
 contract RegistryTest is BaseTest {
-    RadicleRegistry radicleRegistry;
-    DaiPool pool;
+    RadicleRegistry public radicleRegistry;
+    DaiPool public pool;
     Dai public dai;
     Hevm public hevm;
 
