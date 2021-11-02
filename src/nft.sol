@@ -64,6 +64,7 @@ contract FundingNFT is ERC721, Ownable {
         _addTypes(inputNFTTypes);
         _changeIPFSHash(ipfsHash);
         _transferOwnership(owner);
+        dai.approve(address(pool), type(uint256).max);
     }
 
     modifier onlyTokenHolder(uint tokenId) {
@@ -137,7 +138,6 @@ contract FundingNFT is ERC721, Ownable {
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
-        dai.approve(address(pool), topUpAmt);
 
         // start streaming
         pool.updateSubSender(newTokenId, topUpAmt, 0, _receivers(0), _receivers(amtPerSec));
@@ -172,7 +172,6 @@ contract FundingNFT is ERC721, Ownable {
 
     function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         dai.transferFrom(msg.sender, address(this), topUpAmt);
-        dai.approve(address(pool), topUpAmt);
         Receiver[] memory receivers = _tokenReceivers(tokenId);
         pool.updateSubSender(tokenId, topUpAmt, 0, receivers, receivers);
     }
