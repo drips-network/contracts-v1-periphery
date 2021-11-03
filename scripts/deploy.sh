@@ -19,7 +19,7 @@ addValuesToFile() {
 DEPLOYMENT_FILE=${1:-./deployment_$(seth chain).json}
 GOVERNANCE=${1:-0x$ETH_FROM}
 
-message Deployment Config 
+message Deployment Config
 echo "Governance Address: $GOVERNANCE"
 echo "DAI Address:        $DAI"
 
@@ -32,11 +32,11 @@ dapp build
 [ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # one day secs
 message Funding Contracts Deployment
 
-FUNDING_POOL=$(dapp create DaiPool $CYCLE_SECS $DAI)
-
-BUILDER=$(dapp create Builder)
-
+[ -z "$FUNDING_POOL" ] && FUNDING_POOL=$(dapp create DaiPool $CYCLE_SECS $DAI)
 echo "Funding Pool Contract: $FUNDING_POOL"
+
+[ -z "$BUILDER" ] && BUILDER=$(dapp create Builder)
+echo "Builder Contract: $BUILDER"
 
 RADICLE_REGISTRY=$(dapp create RadicleRegistry $FUNDING_POOL $BUILDER $GOVERNANCE)
 
@@ -64,6 +64,7 @@ message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
   dapp verify-contract --async 'lib/radicle-streaming/src/DaiPool.sol:DaiPool' $FUNDING_POOL $CYCLE_SECS $DAI
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $FUNDING_POOL $BUILDER $GOVERNANCE
+  dapp verify-contract --async 'src/builder.sol:Builder' $BUILDER
   NFT_TEMPLATE=$(seth call $RADICLE_REGISTRY 'fundingNFTTemplate()(address)')
   dapp verify-contract --async 'src/nft.sol:FundingNFT' $NFT_TEMPLATE $FUNDING_POOL
 else

@@ -6,8 +6,6 @@ import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 
 contract RadicleRegistry {
-    mapping(uint => address) public projects;
-    uint                public counter;
     address             public governance;
     address             public builder;
 
