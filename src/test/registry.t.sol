@@ -21,7 +21,7 @@ contract RegistryTest is BaseTest {
         dai = new Dai();
         pool = new DaiPool(CYCLE_SECS, dai);
         builder = new Builder();
-        radicleRegistry = new RadicleRegistry(pool,  address(builder), address(this));
+        radicleRegistry = new RadicleRegistry(pool, builder, address(this));
     }
 
     function newNewNFTRegistry() public returns(address) {

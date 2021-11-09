@@ -4,13 +4,14 @@ pragma solidity ^0.8.7;
 import {FundingNFT, InputNFTType} from "./nft.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
+import {IBuilder} from "./builder.sol";
 
 contract RadicleRegistry {
     address             public governance;
-    address             public builder;
+    IBuilder            public builder;
 
     event NewProject(address indexed nftRegistry, address indexed projectOwner);
-    event NewBuilder(address indexed builder);
+    event NewBuilder(IBuilder builder);
     modifier onlyGovernance {require(msg.sender == governance, "only-governance"); _;}
 
     FundingNFT public immutable fundingNFTTemplate;
@@ -18,9 +19,9 @@ contract RadicleRegistry {
 
     event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner);
 
-    constructor (DaiPool pool_, address builder_, address governance_) {
+    constructor (DaiPool pool_, IBuilder builder_, address governance_) {
         governance = governance_;
-        builder = builder_;
+        changeBuilder(builder_);
         fundingNFTTemplate = new FundingNFT(pool_);
     }
 
@@ -39,7 +40,7 @@ contract RadicleRegistry {
         return FundingNFT(Clones.predictDeterministicAddress(address(fundingNFTTemplate), bytes32(id)));
     }
 
-    function changeBuilder(address newBuilder) public onlyGovernance {
+    function changeBuilder(IBuilder newBuilder) public onlyGovernance {
         builder = newBuilder;
         emit NewBuilder(newBuilder);
     }

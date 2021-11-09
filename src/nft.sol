@@ -34,12 +34,9 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     mapping (uint128 => NFTType) public nftTypes;
-
     mapping (uint => uint64) public minted;
-
     string public contractURI;
-
-    bool private initialized;
+    bool public initialized;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
@@ -58,14 +55,14 @@ contract FundingNFT is ERC721, Ownable {
         _;
     }
 
-    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes, address builder_) public {
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes, IBuilder builder_) public {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");
         require(owner != address(0), "owner-address-is-zero");
         _name = name_;
         _symbol = symbol_;
-        builder = IBuilder(builder_);
+        builder = builder_;
         _addTypes(inputNFTTypes);
         _changeIPFSHash(ipfsHash);
         _transferOwnership(owner);

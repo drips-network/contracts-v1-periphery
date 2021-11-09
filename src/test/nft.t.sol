@@ -44,7 +44,7 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry = new FundingNFT(pool);
         // testing addNFTType function
         builder = new Builder();
-        nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), address(builder));
+        nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), builder);
         addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
@@ -358,7 +358,7 @@ contract NFTRegistryTest is BaseTest {
     function testDrip() public {
         FundingNFT projectB = new FundingNFT(pool);
         address arbitraryDripReceiver = address(0x123);
-        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), address(builder));
+        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), builder);
 
         //supporter starts to support default project
         mint(defaultMinAmtPerSec, 30 ether);
