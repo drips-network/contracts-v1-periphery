@@ -11,9 +11,16 @@ interface IBuilder {
         uint128 amtPerCycle,
         bool active
     ) external view returns (string memory);
+    function buildMetaData(
+        string memory projectName,
+        uint256 tokenId,
+        uint128 amtPerCycle,
+        bool active,
+        string memory ipfsHash
+    ) external view returns (string memory);
 }
 
-contract Builder {
+contract Builder is IBuilder {
     string public defaultBackground =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'
         '    <rect width="350" height="350" x="0" y="0" fill="rgba(24, 22, 75, 1)"></rect>'
@@ -46,7 +53,7 @@ contract Builder {
         string tokenId;
         string supportRate;
         string active;
-        string background;
+        string ipfsHash;
     }
 
     function buildMetaData(
@@ -54,15 +61,16 @@ contract Builder {
         uint256 tokenId,
         uint128 amtPerCycle,
         bool active
-    ) public view returns (string memory) {
+    ) external view override returns (string memory) {
         return
-            buildMetaData(
-                projectName,
-                tokenId,
-                amtPerCycle,
-                active,
-                defaultBackground
-            );
+              _buildWithSVG(
+                Data({
+                    projectName: projectName,
+                    tokenId: Strings.toString(tokenId),
+                    supportRate: toTwoDecimals(amtPerCycle),
+                    active: active ? "true" : "false",
+                    ipfsHash: ""
+                }));
     }
 
     function buildMetaData(
@@ -70,31 +78,26 @@ contract Builder {
         uint256 tokenId,
         uint128 amtPerCycle,
         bool active,
-        string memory background
-    ) public view returns (string memory) {
-        string memory tokenActiveString = "false";
-        if (active) {
-            tokenActiveString = "true";
-        }
+        string memory ipfsHash
+    ) external view override returns (string memory) {
         return
-            _buildJSON(
+            _buildWithIPFS(
                 Data({
                     projectName: projectName,
                     tokenId: Strings.toString(tokenId),
                     supportRate: toTwoDecimals(amtPerCycle),
-                    active: tokenActiveString,
-                    background: background
-                })
-            );
+                    active: active ? "true" : "false",
+                    ipfsHash: ipfsHash
+                }));
     }
 
-    function _buildSVG(Data memory data) internal pure returns (string memory) {
+    function _buildSVG(Data memory data) internal view returns (string memory) {
         // not optimized for gas-usage because it is only a testing svg
         return
             string(
                 abi.encodePacked(
                     '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg"><style>svg { background-color: #2980B9;}</style>',
-                    data.background,
+                    defaultBackground,
                     '<text dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" y="100px" class="small" font-size="25px" fill="#FFFFFF">\xf0\x9f\x8c\xb1 ',
                     data.projectName,
                     ' \xf0\x9f\x8c\xb1</text><text  y="50%" dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="40px" fill="#FFFFFF">--',
@@ -107,7 +110,26 @@ contract Builder {
             );
     }
 
-    function _buildJSON(Data memory data)
+        function _buildWithIPFS(Data memory data)
+    internal
+    view
+    returns (string memory)
+    {
+    return _buildJSON(data, string(abi.encodePacked(',"image": "',data.ipfsHash,'"')));
+    }
+
+    function _buildWithSVG(Data memory data)
+    internal
+    view
+    returns (string memory)
+    {
+    return _buildJSON(data, string(abi.encodePacked(',"image": "',
+        "data:image/svg+xml;base64,",
+    Base64.encode(bytes(_buildSVG(data))), '"')));
+
+    }
+
+    function _buildJSON(Data memory data, string memory imageObj)
         internal
         view
         returns (string memory)
@@ -129,10 +151,7 @@ contract Builder {
                                 '"},{ "trait_type": "SupportRate", "value": "',
                                 data.supportRate,
                                 ' DAI"}]',
-                                ',"image": "',
-                                "data:image/svg+xml;base64,",
-                                Base64.encode(bytes(_buildSVG(data))),
-                                '"}'
+                                ',',imageObj,'}'
                             )
                         )
                     )

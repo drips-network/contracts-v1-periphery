@@ -38,7 +38,7 @@ echo "Funding Pool Contract: $FUNDING_POOL"
 [ -z "$BUILDER" ] && BUILDER=$(dapp create Builder)
 echo "Builder Contract: $BUILDER"
 
-RADICLE_REGISTRY=$(dapp create RadicleRegistry $FUNDING_POOL $BUILDER $GOVERNANCE)
+[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $FUNDING_POOL $BUILDER $GOVERNANCE)
 
 echo "Radicle Registry Contract: $RADICLE_REGISTRY"
 
