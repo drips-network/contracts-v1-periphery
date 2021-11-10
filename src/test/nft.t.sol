@@ -46,7 +46,7 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry = new FundingNFT(pool);
         // testing addNFTType function
         builder = new Builder();
-        nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), builder);
+        nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), builder, DripInput({dripFraction: 0, dripReceiver: noDrips()}));
         addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
@@ -360,7 +360,7 @@ contract NFTRegistryTest is BaseTest {
     function testDrip() public {
         FundingNFT projectB = new FundingNFT(pool);
         address arbitraryDripReceiver = address(0x123);
-        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), builder);
+        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), builder, DripInput({dripFraction: 0, dripReceiver: noDrips()}));
 
         //supporter starts to support default project
         mint(defaultMinAmtPerSec, 30 ether);
@@ -371,7 +371,7 @@ contract NFTRegistryTest is BaseTest {
         // first drips should only go to project B
         Receiver[] memory drips = new Receiver[](1);
         drips[0] = Receiver(address(projectB), 1);
-        nftRegistry.drip(shouldDripFraction, noDrips(), drips);
+        nftRegistry.changeDripReceiver(shouldDripFraction, noDrips(), drips);
 
         uint32 dripFraction = pool.getDripsFraction(address(nftRegistry));
         assertEq(dripFraction, shouldDripFraction, "incorrect-drip-fraction");
@@ -393,7 +393,7 @@ contract NFTRegistryTest is BaseTest {
         }
 
         shouldDripFraction = uint32(pool.MAX_DRIPS_FRACTION()/10 * 5);
-        nftRegistry.drip(shouldDripFraction, drips, newDrips);
+        nftRegistry.changeDripReceiver(shouldDripFraction, drips, newDrips);
 
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);

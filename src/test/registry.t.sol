@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
-import {FundingNFT, InputNFTType} from "./../nft.sol";
+import {FundingNFT, InputNFTType, Receiver, DripInput} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
@@ -35,7 +35,7 @@ contract RegistryTest is BaseTest {
         nftTypes[0] = InputNFTType({nftTypeId: 0, limit:limitTypeZero, minAmtPerSec: 10, ipfsHash: ""});
         nftTypes[1] = InputNFTType({nftTypeId: 1, limit:limitTypeOne, minAmtPerSec: 20, ipfsHash: ""});
 
-        FundingNFT nftRegistry = radicleRegistry.newProject(name, symbol, address(this), ipfsHash, nftTypes);
+        FundingNFT nftRegistry = radicleRegistry.newProject(name, symbol, address(this), ipfsHash, nftTypes, DripInput({dripFraction: 0, dripReceiver: new Receiver[](0)}));
         assertEq(nftRegistry.owner(), address(this));
         assertEq(nftRegistry.name(), name);
         assertEq(nftRegistry.symbol(), symbol);
