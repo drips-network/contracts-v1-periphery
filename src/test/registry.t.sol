@@ -12,7 +12,7 @@ import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 contract RegistryTest is BaseTest {
     RadicleRegistry public radicleRegistry;
     Builder public builder;
-    DaiPool pool;
+    DaiPool public pool;
     Dai public dai;
     Hevm public hevm;
 
