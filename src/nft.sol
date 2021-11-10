@@ -43,7 +43,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     mapping (uint128 => NFTType)    public nftTypes;
-    mapping (uint => NFT)    public nfts;
+    mapping (uint => NFT)           public nfts;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
