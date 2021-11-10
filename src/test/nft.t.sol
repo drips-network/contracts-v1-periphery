@@ -32,7 +32,7 @@ contract NFTRegistryTest is BaseTest {
 
     function addNFTType(uint128 nftTypeId, uint64 limit, uint128 minAmtPerSec) public {
         InputNFTType[] memory nftTypes = new InputNFTType[](1);
-        nftTypes[0] = InputNFTType({nftTypeId: nftTypeId, limit:limit, minAmtPerSec: minAmtPerSec});
+        nftTypes[0] = InputNFTType({nftTypeId: nftTypeId, limit:limit, minAmtPerSec: minAmtPerSec, ipfsHash: ""});
         nftRegistry.addTypes(nftTypes);
     }
 
@@ -96,7 +96,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
         addNFTType(typeId, shouldLimit, defaultMinAmtPerSec);
-        (uint limit, uint minted, uint minAmtPerSec) = nftRegistry.nftTypes(typeId);
+        (uint limit, uint minted, uint minAmtPerSec, ) = nftRegistry.nftTypes(typeId);
         assertEq(limit, shouldLimit, "incorrect-limit");
         assertEq(minted, 0, "incorrect-minted");
         assertEq(minAmtPerSec, defaultMinAmtPerSec, "incorrect-minAmtPerSec");
@@ -111,8 +111,8 @@ contract NFTRegistryTest is BaseTest {
         dai.approve(nftRegistry_, uint(amount));
 
         InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:10, minAmtPerSec: defaultMinAmtPerSec});
-        nftTypes[1] = InputNFTType({nftTypeId: 1, limit:10, minAmtPerSec: defaultMinAmtPerSec});
+        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:10, minAmtPerSec: defaultMinAmtPerSec, ipfsHash: ""});
+        nftTypes[1] = InputNFTType({nftTypeId: 1, limit:10, minAmtPerSec: defaultMinAmtPerSec, ipfsHash: ""});
 
         try nftRegistry.addTypes(nftTypes) {
             assertTrue(false, "Mint hasn't reverted");
@@ -125,7 +125,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
         InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:0, minAmtPerSec: 10});
+        nftTypes[0] = InputNFTType({nftTypeId: 1, limit:0, minAmtPerSec: 10, ipfsHash: ""});
 
         try nftRegistry.addTypes(nftTypes) {
         assertTrue(false, "Mint hasn't reverted");
@@ -145,7 +145,7 @@ contract NFTRegistryTest is BaseTest {
             tokenId = nftRegistry.mint(address(this), typeId,  amount/5, defaultMinAmtPerSec);
             assertEq(nftRegistry.tokenType(tokenId), typeId);
         }
-        (, uint minted, ) = nftRegistry.nftTypes(typeId);
+        (, uint minted, ,) = nftRegistry.nftTypes(typeId);
         assertEq(minted, limit);
     }
 
@@ -158,7 +158,7 @@ contract NFTRegistryTest is BaseTest {
         uint tokenId = nftRegistry.mint(address(this), typeId,  amount/2, defaultMinAmtPerSec);
         assertEq(nftRegistry.tokenType(tokenId), typeId);
 
-        (, uint minted, ) = nftRegistry.nftTypes(typeId);
+        (, uint minted, ,) = nftRegistry.nftTypes(typeId);
         emit log_named_uint("minted", minted);
 
         // should fail nft-type-reached-limit

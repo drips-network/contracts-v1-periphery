@@ -13,36 +13,38 @@ struct InputNFTType {
     uint128 nftTypeId;
     uint64 limit;
     uint128 minAmtPerSec;
+    string ipfsHash;
 }
 
 contract FundingNFT is ERC721, Ownable {
     /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
 
-    address public immutable deployer;
-    DaiPool public immutable pool;
-    IDai public immutable dai;
-    IBuilder public builder;
+    address     public immutable deployer;
+    DaiPool     public immutable pool;
+    IDai        public immutable dai;
+    IBuilder    public builder;
 
-    string internal _name;
-    string internal _symbol;
+    string      internal _name;
+    string      internal _symbol;
+    string      public contractURI;
+    bool        public initialized;
 
     struct NFTType {
-        uint64 limit;
-        uint64 minted;
+        uint64  limit;
+        uint64  minted;
         uint128 minAmtPerSec;
+        string ipfsHash;
     }
 
-    mapping (uint128 => NFTType) public nftTypes;
-    mapping (uint => uint64) public minted;
-    string public contractURI;
-    bool public initialized;
+    mapping (uint128 => NFTType)    public nftTypes;
+    mapping (uint => uint64)        public minted;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
-    event NewBuilder(address indexed Builder);
+    event NewBuilder(IBuilder Builder);
 
     constructor(DaiPool pool_) ERC721("", "") {
         deployer = msg.sender;
@@ -62,7 +64,7 @@ contract FundingNFT is ERC721, Ownable {
         require(owner != address(0), "owner-address-is-zero");
         _name = name_;
         _symbol = symbol_;
-        builder = builder_;
+        _changeBuilder(builder_);
         _addTypes(inputNFTTypes);
         _changeIPFSHash(ipfsHash);
         _transferOwnership(owner);
@@ -77,26 +79,32 @@ contract FundingNFT is ERC721, Ownable {
         emit NewContractURI(ipfsHash);
     }
 
+    function _changeBuilder(IBuilder newBuilder) internal {
+        builder = newBuilder;
+        emit NewBuilder(newBuilder);
+    }
+
     function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
         _addTypes(inputNFTTypes);
     }
 
     function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
         for(uint i = 0; i < inputNFTTypes.length; i++) {
-            _addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec);
+            _addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec, inputNFTTypes[i].ipfsHash);
         }
     }
 
-    function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) public onlyOwner {
-        _addType(newTypeId, limit, minAmtPerSec);
+    function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec, string memory ipfsHash) public onlyOwner {
+        _addType(newTypeId, limit, minAmtPerSec, ipfsHash);
     }
 
-    function _addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec) internal {
+    function _addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec, string memory ipfsHash) internal {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "zero-limit-not-allowed");
 
         nftTypes[newTypeId].minAmtPerSec = minAmtPerSec;
         nftTypes[newTypeId].limit = limit;
+        nftTypes[newTypeId].ipfsHash = ipfsHash;
         emit NewNFTType(newTypeId, limit, minAmtPerSec);
     }
 
@@ -238,15 +246,19 @@ contract FundingNFT is ERC721, Ownable {
         return _symbol;
     }
 
-    function changeBuilder(address newBuilder) public onlyOwner {
-        builder =  IBuilder(newBuilder);
-        emit NewBuilder(newBuilder);
+    function changeBuilder(IBuilder newBuilder) public onlyOwner {
+        _changeBuilder(newBuilder);
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
         if(_exists(tokenId)) {
-            return builder.buildMetaData(name(), tokenId,
+            string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
+            if (bytes(ipfsHash).length == 0) {
+                return builder.buildMetaData(name(), tokenId,
                 pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId));
+            }
+            return builder.buildMetaData(name(), tokenId,
+            pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId), ipfsHash);
         }
         return "";
     }

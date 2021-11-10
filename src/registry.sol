@@ -25,7 +25,7 @@ contract RadicleRegistry {
         fundingNFTTemplate = new FundingNFT(pool_);
     }
 
-    function newProject(string calldata name, string calldata symbol, address projectOwner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes) public returns(FundingNFT) {
+    function newProject(string memory name, string memory symbol, address projectOwner, string memory ipfsHash, InputNFTType[] memory inputNFTTypes) public returns(FundingNFT) {
         bytes32 salt = bytes32(nextId++);
         FundingNFT fundingNFT = FundingNFT(Clones.cloneDeterministic(address(fundingNFTTemplate), salt));
         fundingNFT.init(name, symbol, projectOwner, ipfsHash, inputNFTTypes, builder);
