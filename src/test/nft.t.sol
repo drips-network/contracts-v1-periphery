@@ -6,6 +6,7 @@ import "./../nft.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
+import {Builder} from "../builder.sol";
 
 contract TestDai is Dai {
     function mint(uint amount) public {
@@ -33,7 +34,7 @@ contract NFTRegistryTest is BaseTest {
 
     function addNFTType(uint128 nftTypeId, uint64 limit, uint128 minAmtPerSec) public {
         InputNFTType[] memory nftTypes = new InputNFTType[](1);
-        nftTypes[0] = InputNFTType({nftTypeId: nftTypeId, limit:limit, minAmtPerSec: minAmtPerSec});
+        nftTypes[0] = InputNFTType({nftTypeId: nftTypeId, limit:limit, minAmtPerSec: minAmtPerSec, ipfsHash:""});
         nftRegistry.addTypes(nftTypes);
     }
 
@@ -303,8 +304,8 @@ contract NFTRegistryTest is BaseTest {
         assertEq(nftRegistry.influence(tokenId), 0);
     }
 
-    function testChangeIpfsHash() public {
-        nftRegistry.changeIPFSHash("newIpfsHash");
+    function testChangeContractURI() public {
+        nftRegistry.changeContractURI("newIpfsHash");
         assertEq(nftRegistry.contractURI(), "newIpfsHash");
     }
 
@@ -406,7 +407,7 @@ contract NFTRegistryTest is BaseTest {
         assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4, "project B didn't receive drips");
 
         // arbitraryDripReceiver gets 10%
-        pool.collect(arbitraryDripReceiver);
+        pool.collect(arbitraryDripReceiver, noDrips());
         assertEq(dai.balanceOf(arbitraryDripReceiver), (CYCLE_SECS * defaultMinAmtPerSec)/10, "arbitraryDripReceiver didn't receive");
     }
 

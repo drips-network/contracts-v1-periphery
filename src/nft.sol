@@ -46,6 +46,7 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
     event NewBuilder(IBuilder Builder);
+    event DripsUpdated(uint32 dripFraction, Receiver[] drips);
 
     constructor(DaiPool pool_) ERC721("", "") {
         deployer = msg.sender;
@@ -249,10 +250,10 @@ contract FundingNFT is ERC721, Ownable {
             string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
             if (bytes(ipfsHash).length == 0) {
                 return builder.buildMetaData(name(), tokenId,
-                pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId));
+                    amtPerSecond[tokenId] * pool.cycleSecs(), active(tokenId));
             }
             return builder.buildMetaData(name(), tokenId,
-            pool.getAmtPerSecSubSender(address(this), tokenId) * pool.cycleSecs(), active(tokenId), ipfsHash);
+                    amtPerSecond[tokenId] * pool.cycleSecs(), active(tokenId), ipfsHash);
         }
         return "";
     }
