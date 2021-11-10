@@ -121,7 +121,7 @@ contract Builder is IBuilder {
         return
             _buildJSON(
                 data,
-                string(abi.encodePacked(',"image": "', data.ipfsHash, '"'))
+                string(abi.encodePacked('"image": "', data.ipfsHash, '"'))
             );
     }
 
@@ -135,7 +135,7 @@ contract Builder is IBuilder {
                 data,
                 string(
                     abi.encodePacked(
-                        ',"image": "',
+                        '"image": "',
                         "data:image/svg+xml;base64,",
                         Base64.encode(bytes(_buildSVG(data))),
                         '"'
