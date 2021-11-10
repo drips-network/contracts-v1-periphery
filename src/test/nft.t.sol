@@ -302,8 +302,8 @@ contract NFTRegistryTest is BaseTest {
         assertEq(nftRegistry.influence(tokenId), 0);
     }
 
-    function testChangeIpfsHash() public {
-        nftRegistry.changeIPFSHash("newIpfsHash");
+    function testChangeContractURI() public {
+        nftRegistry.changeContractURI("newIpfsHash");
         assertEq(nftRegistry.contractURI(), "newIpfsHash");
     }
 

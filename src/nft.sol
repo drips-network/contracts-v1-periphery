@@ -57,7 +57,7 @@ contract FundingNFT is ERC721, Ownable {
         _;
     }
 
-    function init(string calldata name_, string calldata symbol_, address owner, string calldata ipfsHash, InputNFTType[] memory inputNFTTypes, IBuilder builder_) public {
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata contractURI_, InputNFTType[] memory inputNFTTypes, IBuilder builder_) public {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");
@@ -66,17 +66,17 @@ contract FundingNFT is ERC721, Ownable {
         _symbol = symbol_;
         _changeBuilder(builder_);
         _addTypes(inputNFTTypes);
-        _changeIPFSHash(ipfsHash);
+        _changeContractURI(contractURI_);
         _transferOwnership(owner);
     }
 
-    function changeIPFSHash(string calldata ipfsHash) public onlyOwner {
-        _changeIPFSHash(ipfsHash);
+    function changeContractURI(string calldata contractURI_) public onlyOwner {
+        _changeContractURI(contractURI_);
     }
 
-    function _changeIPFSHash(string calldata ipfsHash) internal {
-        contractURI = ipfsHash;
-        emit NewContractURI(ipfsHash);
+    function _changeContractURI(string calldata contractURI_) internal {
+        contractURI = contractURI_;
+        emit NewContractURI(contractURI_);
     }
 
     function _changeBuilder(IBuilder newBuilder) internal {
