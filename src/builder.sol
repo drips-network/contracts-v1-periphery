@@ -23,7 +23,7 @@ interface IBuilder {
 
 contract Builder is IBuilder {
     // temporary background for testing animations
-    string public defaultBackground =
+    string public constant defaultBackground =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'
         '    <rect width="350" height="350" x="0" y="0" fill="rgba(24, 22, 75, 1)"></rect>'
         '    <path d="M221.93019150067744 62.8151000845344L235.60207442586116-47.66291972726084 145.37609012030754-11.209255816025902z"'

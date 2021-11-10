@@ -30,7 +30,7 @@ contract BuilderTest is DSTest {
     function testSVGJSON() public {
         builder.buildMetaData("Test", 1, 5 ether, true);
     }
-    
+
     function testIPFSJSON() public {
         builder.buildMetaData("Test", 1, 5 ether, true, "ipfsHash");
     }
