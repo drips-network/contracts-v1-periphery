@@ -20,7 +20,7 @@ contract RadicleRegistry {
     FundingNFT public immutable fundingNFTTemplate;
     uint256 public nextId;
 
-    event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner);
+    event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner, string name);
 
     constructor(
         DaiPool pool_,
@@ -45,7 +45,7 @@ contract RadicleRegistry {
             Clones.cloneDeterministic(address(fundingNFTTemplate), salt)
         );
         fundingNFT.init(name, symbol, projectOwner, contractURI, inputNFTTypes, builder, drips);
-        emit NewProject(fundingNFT, projectOwner);
+        emit NewProject(fundingNFT, projectOwner, name);
         return fundingNFT;
     }
 
