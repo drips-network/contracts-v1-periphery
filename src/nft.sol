@@ -34,12 +34,16 @@ contract FundingNFT is ERC721, Ownable {
         uint64  limit;
         uint64  minted;
         uint128 minAmtPerSec;
-        string ipfsHash;
+        string  ipfsHash;
+    }
+
+    struct NFT {
+        uint64  minted;
+        uint128 amtPerSecond;
     }
 
     mapping (uint128 => NFTType)    public nftTypes;
-    mapping (uint => uint64)        public minted;
-    mapping (uint256 => uint128) public amtPerSecond;
+    mapping (uint => NFT)    public nfts;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
@@ -140,8 +144,8 @@ contract FundingNFT is ERC721, Ownable {
         uint256 newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
 
         _mint(nftReceiver, newTokenId);
-        minted[newTokenId] = uint64(block.timestamp);
-        amtPerSecond[newTokenId] = amtPerSec;
+        nfts[newTokenId].minted = uint64(block.timestamp);
+        nfts[newTokenId].amtPerSecond = amtPerSec;
 
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
@@ -201,11 +205,11 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function withdrawable(uint tokenId) public view returns(uint128) {
-        uint128 amtPerSec = amtPerSecond[tokenId];
+        uint128 amtPerSec = nfts[tokenId].amtPerSecond;
         uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
 
         uint128 amtLocked = 0;
-        uint64 fullCycleTimestamp = minted[tokenId] + uint64(pool.cycleSecs());
+        uint64 fullCycleTimestamp = nfts[tokenId].minted + uint64(pool.cycleSecs());
         if(block.timestamp < fullCycleTimestamp) {
             amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
@@ -224,7 +228,7 @@ contract FundingNFT is ERC721, Ownable {
         if (nftTypes[tokenType(tokenId)].minAmtPerSec == 0) {
             return type(uint128).max;
         }
-        uint128 amtPerSec = amtPerSecond[tokenId];
+        uint128 amtPerSec = nfts[tokenId].amtPerSecond;
         uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
         return uint128(block.timestamp + amtWithdrawable/amtPerSec - 1);
     }
@@ -250,10 +254,10 @@ contract FundingNFT is ERC721, Ownable {
             string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
             if (bytes(ipfsHash).length == 0) {
                 return builder.buildMetaData(name(), tokenId,
-                    amtPerSecond[tokenId] * pool.cycleSecs(), active(tokenId));
+                    nfts[tokenId].amtPerSecond * pool.cycleSecs(), active(tokenId));
             }
             return builder.buildMetaData(name(), tokenId,
-                    amtPerSecond[tokenId] * pool.cycleSecs(), active(tokenId), ipfsHash);
+                    nfts[tokenId].amtPerSecond* pool.cycleSecs(), active(tokenId), ipfsHash);
         }
         return "";
     }
@@ -265,13 +269,13 @@ contract FundingNFT is ERC721, Ownable {
 
     function influence(uint tokenId) public view returns(uint influenceScore) {
         if(active(tokenId)) {
-            return amtPerSecond[tokenId];
+            return nfts[tokenId].amtPerSecond;
         }
         return 0;
     }
 
     function _tokenReceivers(uint256 tokenId) internal view returns (Receiver[] memory receivers) {
-        return _receivers(amtPerSecond[tokenId]);
+        return _receivers(nfts[tokenId].amtPerSecond);
     }
 
     function _receivers(uint128 amtPerSec) internal view returns (Receiver[] memory receivers) {
