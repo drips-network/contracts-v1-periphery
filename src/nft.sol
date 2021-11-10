@@ -45,7 +45,7 @@ contract FundingNFT is ERC721, Ownable {
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
     event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
     event NewContractURI(string contractURI);
-    event NewBuilder(IBuilder Builder);
+    event NewBuilder(IBuilder builder);
     event DripsUpdated(uint32 dripFraction, Receiver[] drips);
 
     constructor(DaiPool pool_) ERC721("", "") {
