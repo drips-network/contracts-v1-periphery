@@ -143,16 +143,13 @@ contract Builder is IBuilder {
         numberString = Strings.toString(number / 1 ether);
         uint128 twoDecimals = (number % 1 ether) / 10**16;
         if (twoDecimals > 0) {
-            string memory point = ".";
-            if (twoDecimals > 0 && twoDecimals < 10) {
-                point = ".0";
-            }
             numberString = string(
-                abi.encodePacked(
-                    numberString,
-                    point,
-                    Strings.toString(twoDecimals)
-                )
+            abi.encodePacked(
+            numberString,
+            ".",
+            twoDecimals < 10 ? "0" : "",
+            Strings.toString(twoDecimals)
+            )
             );
         }
         return numberString;
