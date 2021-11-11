@@ -16,6 +16,11 @@ struct InputNFTType {
     string ipfsHash;
 }
 
+struct DripInput {
+    uint32     dripFraction;
+    Receiver[] dripReceiver;
+}
+
 contract FundingNFT is ERC721, Ownable {
     /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
@@ -63,7 +68,7 @@ contract FundingNFT is ERC721, Ownable {
         _;
     }
 
-    function init(string calldata name_, string calldata symbol_, address owner, string calldata contractURI_, InputNFTType[] memory inputNFTTypes, IBuilder builder_) public {
+    function init(string calldata name_, string calldata symbol_, address owner, string calldata contractURI_, InputNFTType[] memory inputNFTTypes, IBuilder builder_, DripInput memory drips) public {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");
@@ -74,6 +79,9 @@ contract FundingNFT is ERC721, Ownable {
         _addTypes(inputNFTTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
+        if(drips.dripFraction > 0) {
+            _changeDripReceiver(drips.dripFraction, new Receiver[](0), drips.dripReceiver);
+        }
         dai.approve(address(pool), type(uint256).max);
     }
 
@@ -199,7 +207,11 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(msg.sender, withdrawn);
     }
 
-    function drip(uint32 dripFraction, Receiver[] calldata currDrips, Receiver[] calldata newDrips) public onlyOwner {
+    function changeDripReceiver(uint32 dripFraction, Receiver[] memory currDrips, Receiver[] memory newDrips) public onlyOwner {
+        _changeDripReceiver(dripFraction, currDrips, newDrips);
+    }
+
+    function _changeDripReceiver(uint32 dripFraction, Receiver[] memory currDrips, Receiver[] memory newDrips) internal  {
         pool.updateSender(0, 0, dripFraction, currDrips, newDrips);
         emit DripsUpdated(dripFraction, newDrips);
     }
@@ -217,7 +229,6 @@ contract FundingNFT is ERC721, Ownable {
         //  mint requires topUp to be at least amtPerSec * pool.cycleSecs therefore
         // if amtLocked > 0 => withdrawable_ > amtLocked
         return withdrawable_ - amtLocked;
-
     }
 
     function activeUntil(uint tokenId) public view returns(uint128) {
