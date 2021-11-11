@@ -431,7 +431,7 @@ contract NFTRegistryTest is BaseTest {
 
         uint128 amtTopUp = 30 ether;
         dai.approve(address(projectB), uint(amtTopUp));
-        uint tokenId = projectB.mint(address(this), DEFAULT_NFT_TYPE, amtTopUp, defaultMinAmtPerSec);
+        projectB.mint(address(this), DEFAULT_NFT_TYPE, amtTopUp, defaultMinAmtPerSec);
 
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);
