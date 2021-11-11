@@ -32,10 +32,10 @@ contract NFTRegistryTest is BaseTest {
         return new Receiver[](0);
     }
 
-    function addNFTType(uint128 nftTypeId, uint64 limit, uint128 minAmtPerSec) public {
+    function addNFTType(FundingNFT nftReg, uint128 nftTypeId, uint64 limit, uint128 minAmtPerSec) public {
         InputNFTType[] memory nftTypes = new InputNFTType[](1);
         nftTypes[0] = InputNFTType({nftTypeId: nftTypeId, limit:limit, minAmtPerSec: minAmtPerSec, ipfsHash:""});
-        nftRegistry.addTypes(nftTypes);
+        nftReg.addTypes(nftTypes);
     }
 
     function setUp() public {
@@ -47,7 +47,7 @@ contract NFTRegistryTest is BaseTest {
         // testing addNFTType function
         builder = new Builder();
         nftRegistry.init("Dummy Project", "DP", address(this) ,"ipfsHash",  new InputNFTType[](0), builder, DripInput({dripFraction: 0, dripReceiver: noDrips()}));
-        addNFTType(DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
+        addNFTType(nftRegistry, DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);
@@ -97,7 +97,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 shouldLimit = 200;
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint(amount));
-        addNFTType(typeId, shouldLimit, defaultMinAmtPerSec);
+        addNFTType(nftRegistry, typeId, shouldLimit, defaultMinAmtPerSec);
         (uint limit, uint minted, uint minAmtPerSec, ) = nftRegistry.nftTypes(typeId);
         assertEq(limit, shouldLimit, "incorrect-limit");
         assertEq(minted, 0, "incorrect-minted");
@@ -141,7 +141,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 5;
         uint128 amount = 100 ether;
         dai.approve(nftRegistry_, uint(amount));
-        addNFTType(typeId, limit, defaultMinAmtPerSec);
+        addNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
         uint tokenId;
         for (uint i =0; i<limit;i++) {
             tokenId = nftRegistry.mint(address(this), typeId,  amount/5, defaultMinAmtPerSec);
@@ -156,7 +156,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 1;
         uint128 amount = 100 ether;
         dai.approve(nftRegistry_, uint(amount));
-        addNFTType(typeId, limit, defaultMinAmtPerSec);
+        addNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
         uint tokenId = nftRegistry.mint(address(this), typeId,  amount/2, defaultMinAmtPerSec);
         assertEq(nftRegistry.tokenType(tokenId), typeId);
 
@@ -190,7 +190,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 nftType = 2;
         uint64 limit = 100;
         uint128 minAmtPerSec = 0;
-        addNFTType(nftType, limit, minAmtPerSec);
+        addNFTType(nftRegistry, nftType, limit, minAmtPerSec);
         uint128 amount = 30 ether;
         dai.approve(nftRegistry_, uint(amount));
         uint tokenId = nftRegistry.mint(address(this), nftType, amount, minAmtPerSec);
@@ -409,6 +409,38 @@ contract NFTRegistryTest is BaseTest {
         // arbitraryDripReceiver gets 10%
         pool.collect(arbitraryDripReceiver, noDrips());
         assertEq(dai.balanceOf(arbitraryDripReceiver), (CYCLE_SECS * defaultMinAmtPerSec)/10, "arbitraryDripReceiver didn't receive");
+    }
+
+    function testDripWithInit() public {
+        address alice = address(0x123);
+        FundingNFT projectB = new FundingNFT(pool);
+
+        uint128 typeId = 0;
+        uint64 limit = 1;
+        addNFTType(projectB, typeId, limit, defaultMinAmtPerSec);
+
+        // default project decides 40% should go to drips
+        uint32 dripFraction = uint32(pool.MAX_DRIPS_FRACTION()/10 * 4);
+
+        // drip to alice
+        Receiver[] memory drips = new Receiver[](1);
+        drips[0] = Receiver(alice, 1);
+
+        // init projcect with drips
+        projectB.init("Project B", "B", address(this) ,"ipfsHash",  new InputNFTType[](0), builder, DripInput({dripFraction: dripFraction, dripReceiver: drips}));
+
+        uint128 amtTopUp = 30 ether;
+        dai.approve(address(projectB), uint(amtTopUp));
+        uint tokenId = projectB.mint(address(this), DEFAULT_NFT_TYPE, amtTopUp, defaultMinAmtPerSec);
+
+        // next cycle
+        hevm.warp(block.timestamp + CYCLE_SECS);
+
+        (uint128 amtProjectB,uint128 amtAlice) = projectB.collect(drips);
+        assertEq(amtProjectB, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 6, "project A didn't receive drips");
+        pool.collect(alice, noDrips());
+        assertEq(amtAlice, (CYCLE_SECS * defaultMinAmtPerSec)/10 * 4);
+        assertEq(amtAlice, dai.balanceOf(alice), "incorrect-dai-amount");
     }
 
     function testTokenURI() public {
