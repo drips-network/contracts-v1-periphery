@@ -1,7 +1,7 @@
 install     : install_solc dapp_update yarn_install
 install_solc:; nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA solc-static-versions.solc_0_8_7
 dapp_update :; dapp update
-yarn_install:; yarn install
+yarn_install:; yarn install --frozen-lockfile
 
 build       :; dapp build
 clean       :; dapp clean

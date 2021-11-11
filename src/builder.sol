@@ -50,30 +50,17 @@ contract Builder is IBuilder {
         "</style>"
         "</defs>";
 
-    struct Data {
-        string projectName;
-        string tokenId;
-        string supportRate;
-        string active;
-        string ipfsHash;
-    }
-
     function buildMetaData(
         string memory projectName,
         uint256 tokenId,
         uint128 amtPerCycle,
         bool active
-    ) external view override returns (string memory) {
-        return
-            _buildWithSVG(
-                Data({
-                    projectName: projectName,
-                    tokenId: Strings.toString(tokenId),
-                    supportRate: toTwoDecimals(amtPerCycle),
-                    active: active ? "true" : "false",
-                    ipfsHash: ""
-                })
-            );
+    ) external pure override returns (string memory) {
+        string memory tokenIdStr = Strings.toString(tokenId);
+        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
+        string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
+        return _buildJSON(projectName, tokenIdStr, supportRate, active, imageObj);
     }
 
     function buildMetaData(
@@ -82,20 +69,17 @@ contract Builder is IBuilder {
         uint128 amtPerCycle,
         bool active,
         string memory ipfsHash
-    ) external view override returns (string memory) {
-        return
-            _buildWithIPFS(
-                Data({
-                    projectName: projectName,
-                    tokenId: Strings.toString(tokenId),
-                    supportRate: toTwoDecimals(amtPerCycle),
-                    active: active ? "true" : "false",
-                    ipfsHash: ipfsHash
-                })
-            );
+    ) external pure override returns (string memory) {
+        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory tokenIdStr = Strings.toString(tokenId);
+        return _buildJSON(projectName, tokenIdStr, supportRate, active, ipfsHash);
     }
 
-    function _buildSVG(Data memory data) internal view returns (string memory) {
+    function _buildSVG(
+        string memory projectName,
+        string memory tokenId,
+        string memory supportRate
+    ) internal pure returns (string memory) {
         // not optimized for gas-usage because it is only a testing svg
         return
             string(
@@ -103,52 +87,24 @@ contract Builder is IBuilder {
                     '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg"><style>svg { background-color: #2980B9;}</style>',
                     defaultBackground,
                     '<text dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" y="100px" class="small" font-size="25px" fill="#FFFFFF">\xf0\x9f\x8c\xb1 ',
-                    data.projectName,
+                    projectName,
                     ' \xf0\x9f\x8c\xb1</text><text  y="50%" dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="40px" fill="#FFFFFF">--',
-                    data.tokenId,
+                    tokenId,
                     '--</text><text  y="270" dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="30px" fill="#FDC034" >',
-                    data.supportRate,
+                    supportRate,
                     " DAI",
                     "</text></svg>"
                 )
             );
     }
-    function _buildWithIPFS(Data memory data)
-        internal
-        view
-        returns (string memory)
-    {
-        return
-            _buildJSON(
-                data,
-                string(abi.encodePacked('"image": "', data.ipfsHash, '"'))
-            );
-    }
 
-    function _buildWithSVG(Data memory data)
-        internal
-        view
-        returns (string memory)
-    {
-        return
-            _buildJSON(
-                data,
-                string(
-                    abi.encodePacked(
-                        '"image": "',
-                        "data:image/svg+xml;base64,",
-                        Base64.encode(bytes(_buildSVG(data))),
-                        '"'
-                    )
-                )
-            );
-    }
-
-    function _buildJSON(Data memory data, string memory imageObj)
-        internal
-        view
-        returns (string memory)
-    {
+    function _buildJSON(
+        string memory projectName,
+        string memory tokenId,
+        string memory supportRate,
+        bool active,
+        string memory imageObj
+    ) internal pure returns (string memory) {
         return
             string(
                 abi.encodePacked(
@@ -157,18 +113,18 @@ contract Builder is IBuilder {
                         bytes(
                             abi.encodePacked(
                                 '{ "projectName":"',
-                                data.projectName,
+                                projectName,
                                 '", ',
                                 '"attributes": [ { "trait_type": "TokenId", "value": "',
-                                data.tokenId,
+                                tokenId,
                                 '"},{ "trait_type": "Active", "value": "',
-                                data.active,
+                                active ? "true" : "false",
                                 '"},{ "trait_type": "SupportRate", "value": "',
-                                data.supportRate,
+                                supportRate,
                                 ' DAI"}]',
-                                ",",
+                                ', "image": "',
                                 imageObj,
-                                "}"
+                                '" }'
                             )
                         )
                     )
