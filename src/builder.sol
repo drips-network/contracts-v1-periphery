@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+// solhint-disable quotes
 pragma solidity ^0.8.7;
 
 import "./base64.sol";
@@ -23,7 +24,7 @@ interface IBuilder {
 
 contract Builder is IBuilder {
     // temporary background for testing animations
-    string public constant defaultBackground =
+    string public constant DEFAULT_BACKGROUND =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'
         '    <rect width="350" height="350" x="0" y="0" fill="rgba(24, 22, 75, 1)"></rect>'
         '    <path d="M221.93019150067744 62.8151000845344L235.60207442586116-47.66291972726084 145.37609012030754-11.209255816025902z"'
@@ -57,7 +58,7 @@ contract Builder is IBuilder {
         bool active
     ) external pure override returns (string memory) {
         string memory tokenIdStr = Strings.toString(tokenId);
-        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
         string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
         return _buildJSON(projectName, tokenIdStr, supportRate, active, imageObj);
@@ -70,7 +71,7 @@ contract Builder is IBuilder {
         bool active,
         string memory ipfsHash
     ) external pure override returns (string memory) {
-        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory tokenIdStr = Strings.toString(tokenId);
         return _buildJSON(projectName, tokenIdStr, supportRate, active, ipfsHash);
     }
@@ -85,7 +86,7 @@ contract Builder is IBuilder {
             string(
                 abi.encodePacked(
                     '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg"><style>svg { background-color: #2980B9;}</style>',
-                    defaultBackground,
+                    DEFAULT_BACKGROUND,
                     '<text dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" y="100px" class="small" font-size="25px" fill="#FFFFFF">\xf0\x9f\x8c\xb1 ',
                     projectName,
                     ' \xf0\x9f\x8c\xb1</text><text  y="50%" dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="40px" fill="#FFFFFF">--',
@@ -132,8 +133,8 @@ contract Builder is IBuilder {
             );
     }
 
-    function toTwoDecimals(uint128 number)
-        public
+    function _toTwoDecimals(uint128 number)
+        internal
         pure
         returns (string memory numberString)
     {
@@ -142,16 +143,13 @@ contract Builder is IBuilder {
         numberString = Strings.toString(number / 1 ether);
         uint128 twoDecimals = (number % 1 ether) / 10**16;
         if (twoDecimals > 0) {
-            string memory point = ".";
-            if (twoDecimals > 0 && twoDecimals < 10) {
-                point = ".0";
-            }
             numberString = string(
-                abi.encodePacked(
-                    numberString,
-                    point,
-                    Strings.toString(twoDecimals)
-                )
+            abi.encodePacked(
+            numberString,
+            ".",
+            twoDecimals < 10 ? "0" : "",
+            Strings.toString(twoDecimals)
+            )
             );
         }
         return numberString;
