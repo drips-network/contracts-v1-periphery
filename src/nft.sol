@@ -250,7 +250,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
-        require(_exists(tokenId), "ERC721: tokenURI query for nonexistent token");
+        require(_exists(tokenId), "nonexistent-token");
         string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
         if (bytes(ipfsHash).length == 0) {
             return builder.buildMetaData(name(), tokenId,

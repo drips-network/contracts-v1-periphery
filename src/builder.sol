@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+// solhint-disable quotes
 pragma solidity ^0.8.7;
 
 import "./base64.sol";
@@ -23,7 +24,7 @@ interface IBuilder {
 
 contract Builder is IBuilder {
     // temporary background for testing animations
-    string public constant defaultBackground =
+    string public constant DEFAULT_BACKGROUND =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'
         '    <rect width="350" height="350" x="0" y="0" fill="rgba(24, 22, 75, 1)"></rect>'
         '    <path d="M221.93019150067744 62.8151000845344L235.60207442586116-47.66291972726084 145.37609012030754-11.209255816025902z"'
@@ -85,7 +86,7 @@ contract Builder is IBuilder {
             string(
                 abi.encodePacked(
                     '<svg class="svgBody" width="350" height="350" viewBox="0 0 350 350" fill="white" xmlns="http://www.w3.org/2000/svg"><style>svg { background-color: #2980B9;}</style>',
-                    defaultBackground,
+                    DEFAULT_BACKGROUND,
                     '<text dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" y="100px" class="small" font-size="25px" fill="#FFFFFF">\xf0\x9f\x8c\xb1 ',
                     projectName,
                     ' \xf0\x9f\x8c\xb1</text><text  y="50%" dominant-baseline="middle" x="50%" text-anchor="middle" font-family="Courier New, Courier, Lucida Sans Typewriter" font-size="40px" fill="#FFFFFF">--',
