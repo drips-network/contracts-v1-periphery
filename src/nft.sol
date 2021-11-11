@@ -17,7 +17,7 @@ struct InputNFTType {
 }
 
 struct DripInput {
-    uint32     dripFraction;
+    uint32 dripFraction;
     Receiver[] dripReceiver;
 }
 
@@ -25,34 +25,40 @@ contract FundingNFT is ERC721, Ownable {
     /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
     uint128 public constant WITHDRAW_ALL = type(uint128).max;
 
-    address     public immutable deployer;
-    DaiPool     public immutable pool;
-    IDai        public immutable dai;
-    IBuilder    public builder;
+    address public immutable deployer;
+    DaiPool public immutable pool;
+    IDai public immutable dai;
+    IBuilder public builder;
 
-    string      internal _name;
-    string      internal _symbol;
-    string      public contractURI;
-    bool        public initialized;
+    string internal _name;
+    string internal _symbol;
+    string public contractURI;
+    bool public initialized;
 
     struct NFTType {
-        uint64  limit;
-        uint64  minted;
+        uint64 limit;
+        uint64 minted;
         uint128 minAmtPerSec;
-        string  ipfsHash;
+        string ipfsHash;
     }
 
     struct NFT {
-        uint64  minted;
+        uint64 minted;
         uint128 amtPerSecond;
     }
 
-    mapping (uint128 => NFTType)    public nftTypes;
-    mapping (uint => NFT)           public nfts;
+    mapping(uint128 => NFTType) public nftTypes;
+    mapping(uint256 => NFT) public nfts;
 
     // events
     event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmtPerSec);
-    event NewNFT(uint indexed tokenId, address indexed receiver, uint128 indexed typeId, uint128 topUp, uint128 amtPerSec);
+    event NewNFT(
+        uint256 indexed tokenId,
+        address indexed receiver,
+        uint128 indexed typeId,
+        uint128 topUp,
+        uint128 amtPerSec
+    );
     event NewContractURI(string contractURI);
     event NewBuilder(IBuilder builder);
     event DripsUpdated(uint32 dripFraction, Receiver[] drips);
@@ -63,12 +69,20 @@ contract FundingNFT is ERC721, Ownable {
         dai = pool_.dai();
     }
 
-    modifier onlyTokenHolder(uint tokenId) {
+    modifier onlyTokenHolder(uint256 tokenId) {
         require(ownerOf(tokenId) == msg.sender, "not-nft-owner");
         _;
     }
 
-    function init(string calldata name_, string calldata symbol_, address owner, string calldata contractURI_, InputNFTType[] memory inputNFTTypes, IBuilder builder_, DripInput memory drips) public {
+    function init(
+        string calldata name_,
+        string calldata symbol_,
+        address owner,
+        string calldata contractURI_,
+        InputNFTType[] memory inputNFTTypes,
+        IBuilder builder_,
+        DripInput memory drips
+    ) public {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");
@@ -79,7 +93,7 @@ contract FundingNFT is ERC721, Ownable {
         _addTypes(inputNFTTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
-        if(drips.dripFraction > 0) {
+        if (drips.dripFraction > 0) {
             _changeDripReceiver(drips.dripFraction, new Receiver[](0), drips.dripReceiver);
         }
         dai.approve(address(pool), type(uint256).max);
@@ -104,16 +118,31 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
-        for(uint i = 0; i < inputNFTTypes.length; i++) {
-            _addType(inputNFTTypes[i].nftTypeId, inputNFTTypes[i].limit, inputNFTTypes[i].minAmtPerSec, inputNFTTypes[i].ipfsHash);
+        for (uint256 i = 0; i < inputNFTTypes.length; i++) {
+            _addType(
+                inputNFTTypes[i].nftTypeId,
+                inputNFTTypes[i].limit,
+                inputNFTTypes[i].minAmtPerSec,
+                inputNFTTypes[i].ipfsHash
+            );
         }
     }
 
-    function addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec, string memory ipfsHash) public onlyOwner {
+    function addType(
+        uint128 newTypeId,
+        uint64 limit,
+        uint128 minAmtPerSec,
+        string memory ipfsHash
+    ) public onlyOwner {
         _addType(newTypeId, limit, minAmtPerSec, ipfsHash);
     }
 
-    function _addType(uint128 newTypeId, uint64 limit, uint128 minAmtPerSec, string memory ipfsHash) internal {
+    function _addType(
+        uint128 newTypeId,
+        uint64 limit,
+        uint128 minAmtPerSec,
+        string memory ipfsHash
+    ) internal {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "zero-limit-not-allowed");
 
@@ -123,27 +152,35 @@ contract FundingNFT is ERC721, Ownable {
         emit NewNFTType(newTypeId, limit, minAmtPerSec);
     }
 
-    function createTokenId(uint128 id, uint128 nftType) public pure returns(uint tokenId) {
-        return uint((uint(nftType) << 128)) | id;
+    function createTokenId(uint128 id, uint128 nftType) public pure returns (uint256 tokenId) {
+        return uint256((uint256(nftType) << 128)) | id;
     }
 
-    function tokenType(uint tokenId) public pure returns(uint128 nftType) {
+    function tokenType(uint256 tokenId) public pure returns (uint128 nftType) {
         return uint128(tokenId >> 128);
     }
 
-    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec,
+    function mint(
+        address nftReceiver,
+        uint128 typeId,
+        uint128 topUpAmt,
+        uint128 amtPerSec,
         uint256 nonce,
         uint256 expiry,
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-    external returns (uint256) {
+    ) external returns (uint256) {
         dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
         return mint(nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
-    function mint(address nftReceiver, uint128 typeId, uint128 topUpAmt, uint128 amtPerSec) public returns (uint256) {
+    function mint(
+        address nftReceiver,
+        uint128 typeId,
+        uint128 topUpAmt,
+        uint128 amtPerSec
+    ) public returns (uint256) {
         require(amtPerSec >= nftTypes[typeId].minAmtPerSec, "amt-per-sec-too-low");
         uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
@@ -166,36 +203,49 @@ contract FundingNFT is ERC721, Ownable {
         return newTokenId;
     }
 
-    function collect(Receiver[] calldata currDrips) public onlyOwner returns (uint128 collected, uint128 dripped) {
+    function collect(Receiver[] calldata currDrips)
+        public
+        onlyOwner
+        returns (uint128 collected, uint128 dripped)
+    {
         (, dripped) = pool.collect(address(this), currDrips);
         collected = uint128(dai.balanceOf(address(this)));
         dai.transfer(owner(), collected);
     }
 
-    function collectable(Receiver[] calldata currDrips) public view returns (uint128 toCollect, uint128 toDrip) {
+    function collectable(Receiver[] calldata currDrips)
+        public
+        view
+        returns (uint128 toCollect, uint128 toDrip)
+    {
         (toCollect, toDrip) = pool.collectable(address(this), currDrips);
         toCollect += uint128(dai.balanceOf(address(this)));
     }
 
-    function topUp(uint tokenId, uint128 topUpAmt,
+    function topUp(
+        uint256 tokenId,
+        uint128 topUpAmt,
         uint256 nonce,
         uint256 expiry,
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-    public {
+    ) public {
         dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
         topUp(tokenId, topUpAmt);
     }
 
-    function topUp(uint tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
+    function topUp(uint256 tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         Receiver[] memory receivers = _tokenReceivers(tokenId);
         pool.updateSubSender(tokenId, topUpAmt, 0, receivers, receivers);
     }
 
-    function withdraw(uint tokenId, uint128 withdrawAmt) public onlyTokenHolder(tokenId) returns(uint128 withdrawn) {
+    function withdraw(uint256 tokenId, uint128 withdrawAmt)
+        public
+        onlyTokenHolder(tokenId)
+        returns (uint128 withdrawn)
+    {
         uint128 withdrawableAmt = withdrawable(tokenId);
         if (withdrawAmt == WITHDRAW_ALL) {
             withdrawAmt = withdrawableAmt;
@@ -207,22 +257,34 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(msg.sender, withdrawn);
     }
 
-    function changeDripReceiver(uint32 dripFraction, Receiver[] memory currDrips, Receiver[] memory newDrips) public onlyOwner {
+    function changeDripReceiver(
+        uint32 dripFraction,
+        Receiver[] memory currDrips,
+        Receiver[] memory newDrips
+    ) public onlyOwner {
         _changeDripReceiver(dripFraction, currDrips, newDrips);
     }
 
-    function _changeDripReceiver(uint32 dripFraction, Receiver[] memory currDrips, Receiver[] memory newDrips) internal  {
+    function _changeDripReceiver(
+        uint32 dripFraction,
+        Receiver[] memory currDrips,
+        Receiver[] memory newDrips
+    ) internal {
         pool.updateSender(0, 0, dripFraction, currDrips, newDrips);
         emit DripsUpdated(dripFraction, newDrips);
     }
 
-    function withdrawable(uint tokenId) public view returns(uint128) {
+    function withdrawable(uint256 tokenId) public view returns (uint128) {
         uint128 amtPerSec = nfts[tokenId].amtPerSecond;
-        uint128 withdrawable_ = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
+        uint128 withdrawable_ = pool.withdrawableSubSender(
+            address(this),
+            tokenId,
+            _receivers(amtPerSec)
+        );
 
         uint128 amtLocked = 0;
         uint64 fullCycleTimestamp = nfts[tokenId].minted + uint64(pool.cycleSecs());
-        if(block.timestamp < fullCycleTimestamp) {
+        if (block.timestamp < fullCycleTimestamp) {
             amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
 
@@ -231,8 +293,8 @@ contract FundingNFT is ERC721, Ownable {
         return withdrawable_ - amtLocked;
     }
 
-    function activeUntil(uint tokenId) public view returns(uint128) {
-        if(!_exists(tokenId)) {
+    function activeUntil(uint256 tokenId) public view returns (uint128) {
+        if (!_exists(tokenId)) {
             return 0;
         }
 
@@ -240,11 +302,15 @@ contract FundingNFT is ERC721, Ownable {
             return type(uint128).max;
         }
         uint128 amtPerSec = nfts[tokenId].amtPerSecond;
-        uint128 amtWithdrawable = pool.withdrawableSubSender(address(this), tokenId, _receivers(amtPerSec));
-        return uint128(block.timestamp + amtWithdrawable/amtPerSec - 1);
+        uint128 amtWithdrawable = pool.withdrawableSubSender(
+            address(this),
+            tokenId,
+            _receivers(amtPerSec)
+        );
+        return uint128(block.timestamp + amtWithdrawable / amtPerSec - 1);
     }
 
-    function active(uint tokenId) public view returns(bool) {
+    function active(uint256 tokenId) public view returns (bool) {
         return activeUntil(tokenId) >= block.timestamp;
     }
 
@@ -260,24 +326,35 @@ contract FundingNFT is ERC721, Ownable {
         _changeBuilder(newBuilder);
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "nonexistent-token");
         string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
         if (bytes(ipfsHash).length == 0) {
-            return builder.buildMetaData(name(), tokenId,
-                nfts[tokenId].amtPerSecond * pool.cycleSecs(), active(tokenId));
+            return
+                builder.buildMetaData(
+                    name(),
+                    tokenId,
+                    nfts[tokenId].amtPerSecond * pool.cycleSecs(),
+                    active(tokenId)
+                );
         }
-        return builder.buildMetaData(name(), tokenId,
-                nfts[tokenId].amtPerSecond* pool.cycleSecs(), active(tokenId), ipfsHash);
+        return
+            builder.buildMetaData(
+                name(),
+                tokenId,
+                nfts[tokenId].amtPerSecond * pool.cycleSecs(),
+                active(tokenId),
+                ipfsHash
+            );
     }
 
-    function currLeftSecsInCycle() public view returns(uint64) {
+    function currLeftSecsInCycle() public view returns (uint64) {
         uint64 cycleSecs = pool.cycleSecs();
         return cycleSecs - (uint64(block.timestamp) % cycleSecs);
     }
 
-    function influence(uint tokenId) public view returns(uint influenceScore) {
-        if(active(tokenId)) {
+    function influence(uint256 tokenId) public view returns (uint256 influenceScore) {
+        if (active(tokenId)) {
             return nfts[tokenId].amtPerSecond;
         }
         return 0;

@@ -133,23 +133,19 @@ contract Builder is IBuilder {
             );
     }
 
-    function _toTwoDecimals(uint128 number)
-        internal
-        pure
-        returns (string memory numberString)
-    {
+    function _toTwoDecimals(uint128 number) internal pure returns (string memory numberString) {
         // decimal after the first two decimals are rounded up or down
         number += 0.005 * 10**18;
         numberString = Strings.toString(number / 1 ether);
         uint128 twoDecimals = (number % 1 ether) / 10**16;
         if (twoDecimals > 0) {
             numberString = string(
-            abi.encodePacked(
-            numberString,
-            ".",
-            twoDecimals < 10 ? "0" : "",
-            Strings.toString(twoDecimals)
-            )
+                abi.encodePacked(
+                    numberString,
+                    ".",
+                    twoDecimals < 10 ? "0" : "",
+                    Strings.toString(twoDecimals)
+                )
             );
         }
         return numberString;

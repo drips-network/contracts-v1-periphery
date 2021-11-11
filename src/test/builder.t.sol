@@ -5,11 +5,7 @@ import "ds-test/test.sol";
 import "../builder.sol";
 
 contract WrapperBuilder is Builder {
-    function toTwoDecimals(uint128 number)
-    public
-    pure
-    returns (string memory numberString)
-    {
+    function toTwoDecimals(uint128 number) public pure returns (string memory numberString) {
         return _toTwoDecimals(number);
     }
 }
@@ -26,7 +22,7 @@ contract BuilderTest is DSTest {
         assertEq(builder.toTwoDecimals(12.01 * 10**18), "12.01", "incorrect-number-string");
         assertEq(builder.toTwoDecimals(12.00 * 10**18), "12", "incorrect-number-string");
         assertEq(builder.toTwoDecimals(0.001 * 10**18), "0", "incorrect-number-string");
-        assertEq(builder.toTwoDecimals(0.01 * 10**18),  "0.01", "incorrect-number-string");
+        assertEq(builder.toTwoDecimals(0.01 * 10**18), "0.01", "incorrect-number-string");
         // round up
         assertEq(builder.toTwoDecimals(12.019 * 10**18), "12.02", "incorrect-number-string");
         assertEq(builder.toTwoDecimals(12.0150 * 10**18), "12.02", "incorrect-number-string");
@@ -44,5 +40,4 @@ contract BuilderTest is DSTest {
     function testIPFSJSON() public view {
         builder.buildMetaData("Test", 1, 5 ether, true, "ipfsHash");
     }
-
 }

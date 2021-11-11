@@ -15,6 +15,6 @@
             }
         ],
         "not-rely-on-time": "off",
-        "prettier/prettier": "off"
+        "prettier/prettier": "warn"
     }
 }
