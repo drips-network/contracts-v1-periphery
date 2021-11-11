@@ -250,16 +250,14 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)  {
-        if(_exists(tokenId)) {
-            string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
-            if (bytes(ipfsHash).length == 0) {
-                return builder.buildMetaData(name(), tokenId,
-                    nfts[tokenId].amtPerSecond * pool.cycleSecs(), active(tokenId));
-            }
+        require(_exists(tokenId), "ERC721: tokenURI query for nonexistent token");
+        string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
+        if (bytes(ipfsHash).length == 0) {
             return builder.buildMetaData(name(), tokenId,
-                    nfts[tokenId].amtPerSecond* pool.cycleSecs(), active(tokenId), ipfsHash);
+                nfts[tokenId].amtPerSecond * pool.cycleSecs(), active(tokenId));
         }
-        return "";
+        return builder.buildMetaData(name(), tokenId,
+                nfts[tokenId].amtPerSecond* pool.cycleSecs(), active(tokenId), ipfsHash);
     }
 
     function currLeftSecsInCycle() public view returns(uint64) {

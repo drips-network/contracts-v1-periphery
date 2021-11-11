@@ -4,11 +4,21 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import "../builder.sol";
 
+contract WrapperBuilder is Builder {
+    function toTwoDecimals(uint128 number)
+    public
+    pure
+    returns (string memory numberString)
+    {
+        return _toTwoDecimals(number);
+    }
+}
+
 contract BuilderTest is DSTest {
-    Builder public builder;
+    WrapperBuilder public builder;
 
     function setUp() public {
-        builder = new Builder();
+        builder = new WrapperBuilder();
     }
 
     function testDigits() public {

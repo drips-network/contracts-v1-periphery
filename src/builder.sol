@@ -57,7 +57,7 @@ contract Builder is IBuilder {
         bool active
     ) external pure override returns (string memory) {
         string memory tokenIdStr = Strings.toString(tokenId);
-        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
         string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
         return _buildJSON(projectName, tokenIdStr, supportRate, active, imageObj);
@@ -70,7 +70,7 @@ contract Builder is IBuilder {
         bool active,
         string memory ipfsHash
     ) external pure override returns (string memory) {
-        string memory supportRate = toTwoDecimals(amtPerCycle);
+        string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory tokenIdStr = Strings.toString(tokenId);
         return _buildJSON(projectName, tokenIdStr, supportRate, active, ipfsHash);
     }
@@ -132,8 +132,8 @@ contract Builder is IBuilder {
             );
     }
 
-    function toTwoDecimals(uint128 number)
-        public
+    function _toTwoDecimals(uint128 number)
+        internal
         pure
         returns (string memory numberString)
     {

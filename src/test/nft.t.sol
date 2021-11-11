@@ -417,4 +417,8 @@ contract NFTRegistryTest is BaseTest {
         assertEq(address(builder), address(nftRegistry.builder()), "builder-not-set");
         nftRegistry.tokenURI(tokenId);
     }
+
+    function testFailNonExistingTokenURI() public {
+        nftRegistry.tokenURI(1234);
+    }
 }
