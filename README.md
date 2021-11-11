@@ -1,8 +1,8 @@
-# Radicle Community Token Contracts
-The main repository for the Radicle community token.
+# Radicle Drips
+The main repository for Radicle Drips 
 
 ## Getting started
-Radicle Community token uses [dapp.tools](https://github.com/dapphub/dapptools) for development. Please install the `dapp` client. Then, run the following command to install the dependencies:
+Radicle Drips uses [dapp.tools](https://github.com/dapphub/dapptools) for development. Please install the `dapp` client. Then, run the following command to install the dependencies:
 
 ```bash
 dapp update
