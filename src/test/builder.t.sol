@@ -27,11 +27,11 @@ contract BuilderTest is DSTest {
         assertEq(builder.toTwoDecimals(12.0149 * 10**18), "12.01", "incorrect-number-string");
     }
 
-    function testSVGJSON() public {
+    function testSVGJSON() public view {
         builder.buildMetaData("Test", 1, 5 ether, true);
     }
 
-    function testIPFSJSON() public {
+    function testIPFSJSON() public view {
         builder.buildMetaData("Test", 1, 5 ether, true, "ipfsHash");
     }
 
