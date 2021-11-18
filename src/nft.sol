@@ -22,9 +22,6 @@ struct DripInput {
 }
 
 contract FundingNFT is ERC721, Ownable {
-    /// @notice The amount passed as the withdraw amount to withdraw all the withdrawable funds
-    uint128 public constant WITHDRAW_ALL = type(uint128).max;
-
     address public immutable deployer;
     DaiPool public immutable pool;
     IDai public immutable dai;
@@ -247,10 +244,8 @@ contract FundingNFT is ERC721, Ownable {
         returns (uint128 withdrawn)
     {
         uint128 withdrawableAmt = withdrawable(tokenId);
-        if (withdrawAmt == WITHDRAW_ALL) {
+        if (withdrawAmt > withdrawableAmt) {
             withdrawAmt = withdrawableAmt;
-        } else {
-            require(withdrawAmt <= withdrawableAmt, "withdraw-amount-too-high");
         }
         Receiver[] memory receivers = _tokenReceivers(tokenId);
         withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, receivers, receivers);

@@ -300,7 +300,7 @@ contract NFTRegistryTest is BaseTest {
         assertEq(withdrawableAfter, withdrawableBefore - withdrawn, "invalid-withdrawable");
     }
 
-    function testWithdrawAll() public {
+    function testWithdrawingMoreThanWithdrawable() public {
         uint128 initial = 30 ether;
         dai.approve(address(nftRegistry), initial);
         uint256 tokenId = nftRegistry.mint(
@@ -312,30 +312,12 @@ contract NFTRegistryTest is BaseTest {
         uint256 balanceBefore = dai.balanceOf(address(this));
         uint128 withdrawable = nftRegistry.withdrawable(tokenId);
 
-        uint256 withdrawnActual = nftRegistry.withdraw(tokenId, nftRegistry.WITHDRAW_ALL());
+        uint256 withdrawnActual = nftRegistry.withdraw(tokenId, withdrawable + 1);
 
         assertEq(withdrawnActual, withdrawable, "invalid-withdrawn");
         uint256 balanceAfter = dai.balanceOf(address(this));
         assertEq(balanceAfter, balanceBefore + withdrawable, "invalid-balance");
         assertEq(nftRegistry.withdrawable(tokenId), 0, "invalid-withdrawable");
-    }
-
-    function testWithdrawTooMuchFails() public {
-        uint128 initial = 30 ether;
-        dai.approve(address(nftRegistry), initial);
-        uint256 tokenId = nftRegistry.mint(
-            address(this),
-            DEFAULT_NFT_TYPE,
-            initial,
-            defaultMinAmtPerSec
-        );
-        uint128 withdrawable = nftRegistry.withdrawable(tokenId);
-
-        try nftRegistry.withdraw(tokenId, withdrawable + 1) {
-            assertTrue(false, "withdraw-hasnt-reverted");
-        } catch Error(string memory reason) {
-            assertEq(reason, "withdraw-amount-too-high", "invalid-withdraw-revert-reason");
-        }
     }
 
     function testWithdrawForNotOwnedTokenFails() public {
