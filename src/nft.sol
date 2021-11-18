@@ -180,7 +180,7 @@ contract FundingNFT is ERC721, Ownable {
         return uint128(tokenId >> 128);
     }
 
-    function mint(
+    function mintStreaming(
         address nftReceiver,
         uint128 typeId,
         uint128 topUpAmt,
@@ -192,7 +192,7 @@ contract FundingNFT is ERC721, Ownable {
         bytes32 s
     ) external returns (uint256) {
         dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
-        return mint(nftReceiver, typeId, topUpAmt, amtPerSec);
+        return mintStreaming(nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
     // todo implement mint method with permit
@@ -208,6 +208,7 @@ contract FundingNFT is ERC721, Ownable {
         // one time give instead of streaming
         pool.giveFromSubSender(newTokenId, address(this), giveAmt);
         nfts[newTokenId].amt = giveAmt;
+        emit NewNFT(newTokenId, nftReceiver, typeId, giveAmt);
     }
 
     function _mintInternal(address nftReceiver,
@@ -222,7 +223,7 @@ contract FundingNFT is ERC721, Ownable {
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
     }
 
-    function mint(
+    function mintStreaming(
         address nftReceiver,
         uint128 typeId,
         uint128 topUpAmt,
