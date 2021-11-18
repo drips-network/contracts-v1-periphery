@@ -42,6 +42,8 @@ contract FundingNFT is ERC721, Ownable {
         uint64 timeMinted;
         // amtPerSec if the NFT is streaming otherwise the amt given at mint
         uint128 amt;
+        uint128 lastBalance;
+        uint64 lastUpdate;
     }
 
     mapping(uint128 => NFTType) public nftTypes;
@@ -245,8 +247,17 @@ contract FundingNFT is ERC721, Ownable {
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
         // start streaming
-        pool.updateSubSender(newTokenId, topUpAmt, 0, _receivers(0), _receivers(amtPerSec));
+        pool.updateSubSender(
+            newTokenId,
+            0,
+            0,
+            _receivers(0),
+            int128(topUpAmt),
+            _receivers(amtPerSec)
+        );
         nfts[newTokenId].amt = amtPerSec;
+        nfts[newTokenId].lastUpdate = uint64(block.timestamp);
+        nfts[newTokenId].lastBalance = topUpAmt;
         emit NewStreamingNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
@@ -286,7 +297,16 @@ contract FundingNFT is ERC721, Ownable {
         require(nftTypes[tokenType(tokenId)].streaming, "not-a-streaming-nft");
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         Receiver[] memory receivers = _tokenReceivers(tokenId);
-        pool.updateSubSender(tokenId, topUpAmt, 0, receivers, receivers);
+        (uint128 newBalance, ) = pool.updateSubSender(
+            tokenId,
+            nfts[tokenId].lastUpdate,
+            nfts[tokenId].lastBalance,
+            receivers,
+            int128(topUpAmt),
+            receivers
+        );
+        nfts[tokenId].lastUpdate = uint64(block.timestamp);
+        nfts[tokenId].lastBalance = newBalance;
     }
 
     function withdraw(uint256 tokenId, uint128 withdrawAmt)
@@ -299,7 +319,17 @@ contract FundingNFT is ERC721, Ownable {
             withdrawAmt = withdrawableAmt;
         }
         Receiver[] memory receivers = _tokenReceivers(tokenId);
-        withdrawn = pool.updateSubSender(tokenId, 0, withdrawAmt, receivers, receivers);
+        (uint128 newBalance, int128 realBalanceDelta) = pool.updateSubSender(
+            tokenId,
+            nfts[tokenId].lastUpdate,
+            nfts[tokenId].lastBalance,
+            receivers,
+            -int128(withdrawAmt),
+            receivers
+        );
+        nfts[tokenId].lastUpdate = uint64(block.timestamp);
+        nfts[tokenId].lastBalance = newBalance;
+        withdrawn = uint128(-realBalanceDelta);
         dai.transfer(msg.sender, withdrawn);
     }
 
@@ -318,42 +348,25 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function withdrawable(uint256 tokenId) public view returns (uint128) {
-        if (nftTypes[tokenType(tokenId)].streaming == false) {
-            return 0;
-        }
-        uint128 amtPerSec = nfts[tokenId].amt;
-        uint128 withdrawable_ = pool.withdrawableSubSender(
-            address(this),
-            tokenId,
-            _receivers(amtPerSec)
-        );
-
-        uint128 amtLocked = 0;
-        uint64 fullCycleTimestamp = nfts[tokenId].timeMinted + cycleSecs;
-        if (block.timestamp < fullCycleTimestamp) {
-            amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
-        }
-
-        //  mint requires topUp to be at least amtPerSec * cycleSecs therefore
-        // if amtLocked > 0 => withdrawable_ > amtLocked
-        return withdrawable_ - amtLocked;
+        require(_exists(tokenId), "nonexistent-token");
+        if (nftTypes[tokenType(tokenId)].streaming == false) return 0;
+        NFT storage nft = nfts[tokenId];
+        uint64 spentUntil = uint64(block.timestamp);
+        uint64 minSpentUntil = nft.timeMinted + cycleSecs;
+        if (spentUntil < minSpentUntil) spentUntil = minSpentUntil;
+        uint192 spent = (spentUntil - nft.lastUpdate) * uint192(nft.amt);
+        if (nft.lastBalance < spent) return nft.lastBalance % nft.amt;
+        return nft.lastBalance - uint128(spent);
     }
 
     function activeUntil(uint256 tokenId) public view returns (uint128) {
-        if (!_exists(tokenId)) {
-            return 0;
-        }
-        uint128 amtPerSec = nfts[tokenId].amt;
-        if (nftTypes[tokenType(tokenId)].streaming == false || amtPerSec == 0) {
+        require(_exists(tokenId), "nonexistent-token");
+        NFTType storage nftType = nftTypes[tokenType(tokenId)];
+        if (nftType.streaming == false || nftType.minAmt == 0) {
             return type(uint128).max;
         }
-
-        uint128 amtWithdrawable = pool.withdrawableSubSender(
-            address(this),
-            tokenId,
-            _receivers(amtPerSec)
-        );
-        return uint128(block.timestamp + amtWithdrawable / amtPerSec - 1);
+        NFT storage nft = nfts[tokenId];
+        return nft.lastUpdate + nft.lastBalance / nft.amt - 1;
     }
 
     function active(uint256 tokenId) public view returns (bool) {
