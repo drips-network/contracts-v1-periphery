@@ -272,6 +272,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     function topUp(uint256 tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
+        require(nftTypes[tokenType(tokenId)].streaming && _exists(tokenId), "not-a-streaming-nft");
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         Receiver[] memory receivers = _tokenReceivers(tokenId);
         pool.updateSubSender(tokenId, topUpAmt, 0, receivers, receivers);
