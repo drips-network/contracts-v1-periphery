@@ -10,7 +10,7 @@ contract RadicleRegistry {
     address public governance;
     IBuilder public builder;
 
-    event NewProject(address indexed nftRegistry, address indexed projectOwner);
+    event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner, string name);
     event NewBuilder(IBuilder builder);
     modifier onlyGovernance() {
         require(msg.sender == governance, "only-governance");
@@ -19,8 +19,6 @@ contract RadicleRegistry {
 
     FundingNFT public immutable fundingNFTTemplate;
     uint256 public nextId;
-
-    event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner, string name);
 
     constructor(
         DaiPool pool_,
