@@ -68,7 +68,16 @@ contract Builder is IBuilder {
         string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
         string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
-        return _buildJSON(projectName, tokenIdStr, nftTypeStr, supportRate, active, streaming, imageObj);
+        return
+            _buildJSON(
+                projectName,
+                tokenIdStr,
+                nftTypeStr,
+                supportRate,
+                active,
+                streaming,
+                imageObj
+            );
     }
 
     function buildMetaData(
@@ -83,7 +92,20 @@ contract Builder is IBuilder {
         string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory tokenIdStr = Strings.toString(tokenId);
         string memory nftTypeStr = Strings.toString(nftType);
-        return _buildJSON(projectName, tokenIdStr, nftTypeStr, supportRate, active, streaming, ipfsHash);
+        return
+            _buildJSON(
+                projectName,
+                tokenIdStr,
+                nftTypeStr,
+                supportRate,
+                active,
+                streaming,
+                ipfsHash
+            );
+    }
+
+    function _toString(bool v) internal pure returns (string memory) {
+        return v ? "true" : "false";
     }
 
     function _buildSVG(
@@ -109,6 +131,31 @@ contract Builder is IBuilder {
             );
     }
 
+    function _buildJSONAttributes(
+        string memory tokenId,
+        string memory nftType,
+        string memory supportRate,
+        bool active,
+        bool streaming
+    ) internal pure returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    '"attributes": [ { "trait_type": "TokenId", "value": "',
+                    tokenId,
+                    '"},{ "trait_type": "Type", "value": "',
+                    nftType,
+                    '"},{ "trait_type": "Active", "value": "',
+                    active ? "true" : "false",
+                    '"},{ "trait_type": "Streaming Token", "value": "',
+                    streaming ? "true" : "false",
+                    '"},{ "trait_type": "SupportRate", "value": "',
+                    supportRate,
+                    ' DAI"}]'
+                )
+            );
+    }
+
     function _buildJSON(
         string memory projectName,
         string memory tokenId,
@@ -128,13 +175,13 @@ contract Builder is IBuilder {
                                 '{ "projectName":"',
                                 projectName,
                                 '", ',
-                                '"attributes": [ { "trait_type": "TokenId", "value": "',
-                                tokenId,
-                                '"},{ "trait_type": "Active", "value": "',
-                                active ? "true" : "false",
-                                '"},{ "trait_type": "SupportRate", "value": "',
-                                supportRate,
-                                ' DAI"}]',
+                                _buildJSONAttributes(
+                                    tokenId,
+                                    nftType,
+                                    supportRate,
+                                    active,
+                                    streaming
+                                ),
                                 ', "image": "',
                                 imageObj,
                                 '" }'
