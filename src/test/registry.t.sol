@@ -61,10 +61,10 @@ contract RegistryTest is BaseTest {
         assertEq(nftRegistry.contractURI(), ipfsHash);
         assertEq(address(nftRegistry.pool()), address(pool));
         assertEq(address(radicleRegistry.projectAddr(0)), address(nftRegistry));
-        (uint64 limit, uint64 minted, uint128 minAmtPerSec, ,) = nftRegistry.nftTypes(0);
+        (uint64 limit, uint64 minted, uint128 minAmtPerSec, , ) = nftRegistry.nftTypes(0);
         assertEq(limit, limitTypeZero);
         assertEq(minAmtPerSec, 10);
-        (limit, minted, minAmtPerSec, ,) = nftRegistry.nftTypes(1);
+        (limit, minted, minAmtPerSec, , ) = nftRegistry.nftTypes(1);
         assertEq(limit, limitTypeOne);
         assertEq(minAmtPerSec, 20);
         return address(nftRegistry);

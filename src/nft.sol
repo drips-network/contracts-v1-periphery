@@ -195,7 +195,19 @@ contract FundingNFT is ERC721, Ownable {
         return mintStreaming(nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
-    // todo implement mint method with permit
+    function mint(
+        address nftReceiver,
+        uint128 typeId,
+        uint128 amtGive,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256) {
+        dai.permit(msg.sender, address(this), nonce, expiry, true, v, r, s);
+        return mint(nftReceiver, typeId, amtGive);
+    }
 
     function mint(
         address nftReceiver,
@@ -211,10 +223,11 @@ contract FundingNFT is ERC721, Ownable {
         emit NewNFT(newTokenId, nftReceiver, typeId, giveAmt);
     }
 
-    function _mintInternal(address nftReceiver,
+    function _mintInternal(
+        address nftReceiver,
         uint128 typeId,
-        uint128 topUpAmt) internal returns(uint newTokenId) {
-
+        uint128 topUpAmt
+    ) internal returns (uint256 newTokenId) {
         require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
         newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
         _mint(nftReceiver, newTokenId);
@@ -234,7 +247,7 @@ contract FundingNFT is ERC721, Ownable {
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
-            // start streaming
+        // start streaming
         pool.updateSubSender(newTokenId, topUpAmt, 0, _receivers(0), _receivers(amtPerSec));
         nfts[newTokenId].amt = amtPerSec;
         emit NewStreamingNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);

@@ -38,13 +38,23 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit,
         uint128 minAmtPerSec
     ) public {
+        addNFTType(nftReg, nftTypeId, limit, minAmtPerSec, true);
+    }
+
+    function addNFTType(
+        FundingNFT nftReg,
+        uint128 nftTypeId,
+        uint64 limit,
+        uint128 minAmt,
+        bool streaming
+    ) public {
         InputNFTType[] memory nftTypes = new InputNFTType[](1);
         nftTypes[0] = InputNFTType({
             nftTypeId: nftTypeId,
             limit: limit,
-            minAmt: minAmtPerSec,
+            minAmt: minAmt,
             ipfsHash: "",
-            streaming: true
+            streaming: streaming
         });
         nftReg.addTypes(nftTypes);
     }
@@ -121,12 +131,17 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
         addStreamingNFTType(nftRegistry, typeId, shouldLimit, defaultMinAmtPerSec);
-        (uint256 limit, uint256 minted, uint256 minAmtPerSec, ,) = nftRegistry.nftTypes(typeId);
+        (uint256 limit, uint256 minted, uint256 minAmtPerSec, , ) = nftRegistry.nftTypes(typeId);
         assertEq(limit, shouldLimit, "incorrect-limit");
         assertEq(minted, 0, "incorrect-minted");
         assertEq(minAmtPerSec, defaultMinAmtPerSec, "incorrect-minAmtPerSec");
 
-        uint256 tokenId = nftRegistry.mintStreaming(address(this), typeId, amount, defaultMinAmtPerSec);
+        uint256 tokenId = nftRegistry.mintStreaming(
+            address(this),
+            typeId,
+            amount,
+            defaultMinAmtPerSec
+        );
         assertEq(nftRegistry.tokenType(tokenId), typeId);
         assertEq(
             bytes32(tokenId),
@@ -165,7 +180,13 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
         InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({nftTypeId: 1, limit: 0, minAmt: 10, ipfsHash: "", streaming: true});
+        nftTypes[0] = InputNFTType({
+            nftTypeId: 1,
+            limit: 0,
+            minAmt: 10,
+            ipfsHash: "",
+            streaming: true
+        });
 
         try nftRegistry.addTypes(nftTypes) {
             assertTrue(false, "Mint hasn't reverted");
@@ -182,10 +203,15 @@ contract NFTRegistryTest is BaseTest {
         addStreamingNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
         uint256 tokenId;
         for (uint256 i = 0; i < limit; i++) {
-            tokenId = nftRegistry.mintStreaming(address(this), typeId, amount / 5, defaultMinAmtPerSec);
+            tokenId = nftRegistry.mintStreaming(
+                address(this),
+                typeId,
+                amount / 5,
+                defaultMinAmtPerSec
+            );
             assertEq(nftRegistry.tokenType(tokenId), typeId);
         }
-        (, uint256 minted, , ,) = nftRegistry.nftTypes(typeId);
+        (, uint256 minted, , , ) = nftRegistry.nftTypes(typeId);
         assertEq(minted, limit);
     }
 
@@ -195,10 +221,15 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 100 ether;
         dai.approve(nftRegistry_, uint256(amount));
         addStreamingNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
-        uint256 tokenId = nftRegistry.mintStreaming(address(this), typeId, amount / 2, defaultMinAmtPerSec);
+        uint256 tokenId = nftRegistry.mintStreaming(
+            address(this),
+            typeId,
+            amount / 2,
+            defaultMinAmtPerSec
+        );
         assertEq(nftRegistry.tokenType(tokenId), typeId);
 
-        (, uint256 minted, , ,) = nftRegistry.nftTypes(typeId);
+        (, uint256 minted, , , ) = nftRegistry.nftTypes(typeId);
         emit log_named_uint("minted", minted);
 
         // should fail nft-type-reached-limit
@@ -542,7 +573,27 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry.tokenURI(tokenId);
     }
 
-    function testFailNonExistingTokenURI() public {
+    function testFailNonExistingTokenURI() public view {
         nftRegistry.tokenURI(1234);
+    }
+
+    function testOneTimeGive() public {
+        uint128 minGiveAmt = 100 ether;
+        uint128 nftTypeId = 2;
+        uint64 limit = 1;
+        addNFTType(nftRegistry, nftTypeId, limit, minGiveAmt, false);
+
+        uint128 giveAmt = 110 ether;
+        dai.approve(address(nftRegistry), uint256(giveAmt));
+
+        uint256 preBalance = dai.balanceOf(address(this));
+        uint256 tokenId = nftRegistry.mint(address(this), nftTypeId, giveAmt);
+        assertEq(dai.balanceOf(address(this)), preBalance - giveAmt);
+
+        preBalance = dai.balanceOf(nftRegistry_);
+        (uint128 collected, ) = nftRegistry.collect(noDrips());
+        assertEq(collected, giveAmt);
+
+        assertEq(nftRegistry.activeUntil(tokenId), type(uint128).max);
     }
 }
