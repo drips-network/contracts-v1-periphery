@@ -8,14 +8,18 @@ import "openzeppelin-contracts/utils/Strings.sol";
 interface IBuilder {
     function buildMetaData(
         string memory projectName,
-        uint256 tokenId,
+        uint128 tokenId,
+        uint128 nftType,
+        bool streaming,
         uint128 amtPerCycle,
         bool active
     ) external view returns (string memory);
 
     function buildMetaData(
         string memory projectName,
-        uint256 tokenId,
+        uint128 tokenId,
+        uint128 nftType,
+        bool streaming,
         uint128 amtPerCycle,
         bool active,
         string memory ipfsHash
@@ -53,27 +57,33 @@ contract Builder is IBuilder {
 
     function buildMetaData(
         string memory projectName,
-        uint256 tokenId,
+        uint128 tokenId,
+        uint128 nftType,
+        bool streaming,
         uint128 amtPerCycle,
         bool active
     ) external pure override returns (string memory) {
         string memory tokenIdStr = Strings.toString(tokenId);
+        string memory nftTypeStr = Strings.toString(nftType);
         string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
         string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
-        return _buildJSON(projectName, tokenIdStr, supportRate, active, imageObj);
+        return _buildJSON(projectName, tokenIdStr, nftTypeStr, supportRate, active, streaming, imageObj);
     }
 
     function buildMetaData(
         string memory projectName,
-        uint256 tokenId,
+        uint128 tokenId,
+        uint128 nftType,
+        bool streaming,
         uint128 amtPerCycle,
         bool active,
         string memory ipfsHash
     ) external pure override returns (string memory) {
         string memory supportRate = _toTwoDecimals(amtPerCycle);
         string memory tokenIdStr = Strings.toString(tokenId);
-        return _buildJSON(projectName, tokenIdStr, supportRate, active, ipfsHash);
+        string memory nftTypeStr = Strings.toString(nftType);
+        return _buildJSON(projectName, tokenIdStr, nftTypeStr, supportRate, active, streaming, ipfsHash);
     }
 
     function _buildSVG(
@@ -102,8 +112,10 @@ contract Builder is IBuilder {
     function _buildJSON(
         string memory projectName,
         string memory tokenId,
+        string memory nftType,
         string memory supportRate,
         bool active,
+        bool streaming,
         string memory imageObj
     ) internal pure returns (string memory) {
         return

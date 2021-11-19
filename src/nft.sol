@@ -383,6 +383,8 @@ contract FundingNFT is ERC721, Ownable {
                 builder.buildMetaData(
                     name(),
                     uint128(tokenId),
+                    tokenType(tokenId),
+                    nftTypes[tokenType(tokenId)].streaming,
                     nfts[tokenId].amt * pool.cycleSecs(),
                     active(tokenId)
                 );
@@ -391,6 +393,8 @@ contract FundingNFT is ERC721, Ownable {
             builder.buildMetaData(
                 name(),
                 uint128(tokenId),
+                tokenType(tokenId),
+                nftTypes[tokenType(tokenId)].streaming,
                 nfts[tokenId].amt * pool.cycleSecs(),
                 active(tokenId),
                 ipfsHash
