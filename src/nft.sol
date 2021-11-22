@@ -215,8 +215,7 @@ contract FundingNFT is ERC721, Ownable {
         uint128 giveAmt
     ) public returns (uint256 newTokenId) {
         require(giveAmt > nftTypes[typeId].minAmt, "giveAmt-too-low");
-        require(nftTypes[typeId].streaming, "nft-type-not-streaming");
-
+        require(nftTypes[typeId].streaming == false, "type-is-streaming");
         newTokenId = _mintInternal(nftReceiver, typeId, giveAmt);
         // one time give instead of streaming
         pool.giveFromSubSender(newTokenId, address(this), giveAmt);
@@ -244,6 +243,7 @@ contract FundingNFT is ERC721, Ownable {
         uint128 amtPerSec
     ) public returns (uint256 newTokenId) {
         require(amtPerSec >= nftTypes[typeId].minAmt, "amt-per-sec-too-low");
+        require(nftTypes[typeId].streaming, "nft-type-not-streaming");
         uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
 
