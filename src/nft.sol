@@ -215,6 +215,7 @@ contract FundingNFT is ERC721, Ownable {
         uint128 giveAmt
     ) public returns (uint256 newTokenId) {
         require(giveAmt > nftTypes[typeId].minAmt, "giveAmt-too-low");
+        require(nftTypes[typeId].streaming, "nft-type-not-streaming");
 
         newTokenId = _mintInternal(nftReceiver, typeId, giveAmt);
         // one time give instead of streaming
