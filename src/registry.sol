@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsReceiver, FundingNFT, InputType} from "./nft.sol";
+import {DripsReceiver, FundingToken, InputType} from "./nft.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
@@ -10,14 +10,14 @@ contract RadicleRegistry {
     address public governance;
     IBuilder public builder;
 
-    event NewProject(FundingNFT indexed fundingNFT, address indexed projectOwner, string name);
+    event NewProject(FundingToken indexed fundingToken, address indexed projectOwner, string name);
     event NewBuilder(IBuilder builder);
     modifier onlyGovernance() {
         require(msg.sender == governance, "only-governance");
         _;
     }
 
-    FundingNFT public immutable fundingNFTTemplate;
+    FundingToken public immutable fundingTokenTemplate;
     uint256 public nextId;
 
     constructor(
@@ -27,7 +27,7 @@ contract RadicleRegistry {
     ) {
         governance = governance_;
         changeBuilder(builder_);
-        fundingNFTTemplate = new FundingNFT(pool_);
+        fundingTokenTemplate = new FundingToken(pool_);
     }
 
     function newProject(
@@ -37,23 +37,23 @@ contract RadicleRegistry {
         string calldata contractURI,
         InputType[] calldata inputTypes,
         DripsReceiver[] memory drips
-    ) public returns (FundingNFT) {
+    ) public returns (FundingToken) {
         bytes32 salt = bytes32(nextId++);
-        FundingNFT fundingNFT = FundingNFT(
-            Clones.cloneDeterministic(address(fundingNFTTemplate), salt)
+        FundingToken fundingToken = FundingToken(
+            Clones.cloneDeterministic(address(fundingTokenTemplate), salt)
         );
-        fundingNFT.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
-        emit NewProject(fundingNFT, projectOwner, name);
-        return fundingNFT;
+        fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
+        emit NewProject(fundingToken, projectOwner, name);
+        return fundingToken;
     }
 
-    function projectAddr(uint256 id) public view returns (FundingNFT) {
+    function projectAddr(uint256 id) public view returns (FundingToken) {
         if (id >= nextId) {
-            return FundingNFT(address(0x0));
+            return FundingToken(address(0x0));
         }
         return
-            FundingNFT(
-                Clones.predictDeterministicAddress(address(fundingNFTTemplate), bytes32(id))
+            FundingToken(
+                Clones.predictDeterministicAddress(address(fundingTokenTemplate), bytes32(id))
             );
     }
 

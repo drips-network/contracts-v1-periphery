@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
-import {DripsReceiver, FundingNFT, InputType} from "./../nft.sol";
+import {DripsReceiver, FundingToken, InputType} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
@@ -24,7 +24,7 @@ contract RegistryTest is BaseTest {
         radicleRegistry = new RadicleRegistry(pool, builder, address(this));
     }
 
-    function newNewNFTRegistry() public returns (address) {
+    function newNewTokenRegistry() public returns (address) {
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
         string memory ipfsHash = "ipfs";
@@ -47,7 +47,7 @@ contract RegistryTest is BaseTest {
             streaming: true
         });
 
-        FundingNFT nftRegistry = radicleRegistry.newProject(
+        FundingToken nftRegistry = radicleRegistry.newProject(
             name,
             symbol,
             address(this),
@@ -70,12 +70,12 @@ contract RegistryTest is BaseTest {
         return address(nftRegistry);
     }
 
-    function testNewNFTRegistry() public {
-        newNewNFTRegistry();
+    function testNewTokenRegistry() public {
+        newNewTokenRegistry();
     }
 
     function testProjectAddr() public {
-        address nftRegistry = newNewNFTRegistry();
+        address nftRegistry = newNewTokenRegistry();
         assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
         assertEq(address(radicleRegistry.projectAddr(1)), address(0));
     }
