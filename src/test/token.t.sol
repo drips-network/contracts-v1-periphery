@@ -115,7 +115,12 @@ contract TokenRegistryTest is BaseTest {
     function testFailNonMinAmt() public {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
-        nftRegistry.mintStreaming(address(this), DEFAULT_TOKEN_TYPE, amount, defaultMinAmtPerSec - 1);
+        nftRegistry.mintStreaming(
+            address(this),
+            DEFAULT_TOKEN_TYPE,
+            amount,
+            defaultMinAmtPerSec - 1
+        );
     }
 
     function testFailNoApproval() public {

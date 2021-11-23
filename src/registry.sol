@@ -52,9 +52,7 @@ contract RadicleRegistry {
             return DripsToken(address(0x0));
         }
         return
-            DripsToken(
-                Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id))
-            );
+            DripsToken(Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id)));
     }
 
     function changeBuilder(IBuilder newBuilder) public onlyGovernance {
