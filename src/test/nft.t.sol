@@ -605,7 +605,6 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 1;
         uint128 giveAmt = 110 ether;
         setup1TimeSupport(minGiveAmt, limit, nftTypeId, giveAmt);
-        uint256 preBalance = dai.balanceOf(nftRegistry_);
         (uint128 collected, ) = nftRegistry.collect(noDrips());
         assertEq(collected, giveAmt);
     }
