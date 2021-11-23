@@ -18,7 +18,7 @@ struct InputType {
     string ipfsHash;
 }
 
-contract DripToken is ERC721, Ownable {
+contract DripsToken is ERC721, Ownable {
     address public immutable deployer;
     DaiPool public immutable pool;
     IDai public immutable dai;

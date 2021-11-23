@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsReceiver, DripToken, InputType} from "./token.sol";
+import {DripsReceiver, DripsToken, InputType} from "./token.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
@@ -10,14 +10,14 @@ contract RadicleRegistry {
     address public governance;
     IBuilder public builder;
 
-    event NewProject(DripToken indexed fundingToken, address indexed projectOwner, string name);
+    event NewProject(DripsToken indexed fundingToken, address indexed projectOwner, string name);
     event NewBuilder(IBuilder builder);
     modifier onlyGovernance() {
         require(msg.sender == governance, "only-governance");
         _;
     }
 
-    DripToken public immutable dripTokenTemplate;
+    DripsToken public immutable dripTokenTemplate;
     uint256 public nextId;
 
     constructor(
@@ -27,7 +27,7 @@ contract RadicleRegistry {
     ) {
         governance = governance_;
         changeBuilder(builder_);
-        dripTokenTemplate = new DripToken(pool_);
+        dripTokenTemplate = new DripsToken(pool_);
     }
 
     function newProject(
@@ -37,9 +37,9 @@ contract RadicleRegistry {
         string calldata contractURI,
         InputType[] calldata inputTypes,
         DripsReceiver[] memory drips
-    ) public returns (DripToken) {
+    ) public returns (DripsToken) {
         bytes32 salt = bytes32(nextId++);
-        DripToken fundingToken = DripToken(
+        DripsToken fundingToken = DripsToken(
             Clones.cloneDeterministic(address(dripTokenTemplate), salt)
         );
         fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
@@ -47,12 +47,12 @@ contract RadicleRegistry {
         return fundingToken;
     }
 
-    function projectAddr(uint256 id) public view returns (DripToken) {
+    function projectAddr(uint256 id) public view returns (DripsToken) {
         if (id >= nextId) {
-            return DripToken(address(0x0));
+            return DripsToken(address(0x0));
         }
         return
-            DripToken(
+            DripsToken(
                 Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id))
             );
     }
