@@ -65,7 +65,7 @@ if [ -n "$ETHERSCAN_API_KEY" ]; then
   dapp verify-contract --async 'lib/radicle-streaming/src/DaiPool.sol:DaiPool' $FUNDING_POOL $CYCLE_SECS $DAI
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $FUNDING_POOL $BUILDER $GOVERNANCE
   dapp verify-contract --async 'src/builder.sol:Builder' $BUILDER
-  Token_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
+  TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
   dapp verify-contract --async 'src/token.sol:DripToken' $TOKEN_TEMPLATE $FUNDING_POOL
 else
     echo "No ETHERSCAN_API_KEY for contract verification provided"
