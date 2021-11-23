@@ -52,8 +52,8 @@ contract NFTRegistryTest is BaseTest {
         uint128 minAmt,
         bool streaming
     ) public {
-        InputNFTType[] memory nftTypes = new InputNFTType[](1);
-        nftTypes[0] = InputNFTType({
+        InputType[] memory nftTypes = new InputType[](1);
+        nftTypes[0] = InputType({
             nftTypeId: nftTypeId,
             limit: limit,
             minAmt: minAmt,
@@ -76,7 +76,7 @@ contract NFTRegistryTest is BaseTest {
             "DP",
             address(this),
             "ipfsHash",
-            new InputNFTType[](0),
+            new InputType[](0),
             builder,
             noDrips()
         );
@@ -157,15 +157,15 @@ contract NFTRegistryTest is BaseTest {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
 
-        InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({
+        InputType[] memory nftTypes = new InputType[](2);
+        nftTypes[0] = InputType({
             nftTypeId: 1,
             limit: 10,
             minAmt: defaultMinAmtPerSec,
             ipfsHash: "",
             streaming: true
         });
-        nftTypes[1] = InputNFTType({
+        nftTypes[1] = InputType({
             nftTypeId: 1,
             limit: 10,
             minAmt: defaultMinAmtPerSec,
@@ -183,8 +183,8 @@ contract NFTRegistryTest is BaseTest {
     function testShouldFailLimitZero() public {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
-        InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({
+        InputType[] memory nftTypes = new InputType[](2);
+        nftTypes[0] = InputType({
             nftTypeId: 1,
             limit: 0,
             minAmt: 10,
@@ -469,7 +469,7 @@ contract NFTRegistryTest is BaseTest {
             "B",
             address(this),
             "ipfsHash",
-            new InputNFTType[](0),
+            new InputType[](0),
             builder,
             noDrips()
         );
@@ -549,7 +549,7 @@ contract NFTRegistryTest is BaseTest {
             "B",
             address(this),
             "ipfsHash",
-            new InputNFTType[](0),
+            new InputType[](0),
             builder,
             drips
         );

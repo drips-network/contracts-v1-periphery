@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
-import {DripsReceiver, FundingNFT, InputNFTType} from "./../nft.sol";
+import {DripsReceiver, FundingNFT, InputType} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
@@ -31,15 +31,15 @@ contract RegistryTest is BaseTest {
         uint64 limitTypeZero = 100;
         uint64 limitTypeOne = 200;
 
-        InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({
+        InputType[] memory nftTypes = new InputType[](2);
+        nftTypes[0] = InputType({
             nftTypeId: 0,
             limit: limitTypeZero,
             minAmt: 10,
             ipfsHash: "",
             streaming: true
         });
-        nftTypes[1] = InputNFTType({
+        nftTypes[1] = InputType({
             nftTypeId: 1,
             limit: limitTypeOne,
             minAmt: 20,

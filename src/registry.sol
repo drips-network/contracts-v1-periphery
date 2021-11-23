@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsReceiver, FundingNFT, InputNFTType} from "./nft.sol";
+import {DripsReceiver, FundingNFT, InputType} from "./nft.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
@@ -35,7 +35,7 @@ contract RadicleRegistry {
         string calldata symbol,
         address projectOwner,
         string calldata contractURI,
-        InputNFTType[] calldata inputNFTTypes,
+        InputType[] calldata inputNFTTypes,
         DripsReceiver[] memory drips
     ) public returns (FundingNFT) {
         bytes32 salt = bytes32(nextId++);

@@ -9,7 +9,7 @@ import "openzeppelin-contracts/access/Ownable.sol";
 import {IBuilder} from "./builder.sol";
 import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
 
-struct InputNFTType {
+struct InputType {
     uint128 nftTypeId;
     uint64 limit;
     // minimum amtPerSecond or minGiveAmt
@@ -86,7 +86,7 @@ contract FundingNFT is ERC721, Ownable {
         string calldata symbol_,
         address owner,
         string calldata contractURI_,
-        InputNFTType[] memory inputNFTTypes,
+        InputType[] memory inputNFTTypes,
         IBuilder builder_,
         DripsReceiver[] memory drips
     ) public {
@@ -120,11 +120,11 @@ contract FundingNFT is ERC721, Ownable {
         emit NewBuilder(newBuilder);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
+    function addTypes(InputType[] memory inputNFTTypes) public onlyOwner {
         _addTypes(inputNFTTypes);
     }
 
-    function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
+    function _addTypes(InputType[] memory inputNFTTypes) internal {
         for (uint256 i = 0; i < inputNFTTypes.length; i++) {
             _addType(
                 inputNFTTypes[i].nftTypeId,
