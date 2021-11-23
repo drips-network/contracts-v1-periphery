@@ -34,10 +34,10 @@ contract BuilderTest is DSTest {
     }
 
     function testSVGJSON() public view {
-        builder.buildMetaData("Test", 1, 5 ether, true);
+        builder.buildMetaData("Test", 1, 2, true, 5 ether, true);
     }
 
     function testIPFSJSON() public view {
-        builder.buildMetaData("Test", 1, 5 ether, true, "ipfsHash");
+        builder.buildMetaData("Test", 1, 2, true, 5 ether, true, "ipfsHash");
     }
 }

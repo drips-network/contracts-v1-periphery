@@ -260,6 +260,7 @@ contract NFTRegistryTest is BaseTest {
         uint256 tokenId = nftRegistry.createTokenId(id, nftType);
         uint128 resultNFTType = nftRegistry.tokenType(tokenId);
         assertEq(resultNFTType, nftType);
+        assertEq(id, uint128(tokenId));
     }
 
     function testZeroAmtPerSec() public {
