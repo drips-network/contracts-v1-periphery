@@ -15,7 +15,7 @@ contract TestDai is Dai {
 }
 
 contract TokenRegistryTest is BaseTest {
-    FundingToken public nftRegistry;
+    DripToken public nftRegistry;
     address public nftRegistry_;
     DaiPool public pool;
     TestDai public dai;
@@ -37,7 +37,7 @@ contract TokenRegistryTest is BaseTest {
     }
 
     function addStreamingType(
-        FundingToken nftReg,
+        DripToken nftReg,
         uint128 nftTypeId,
         uint64 limit,
         uint128 minAmtPerSec
@@ -46,7 +46,7 @@ contract TokenRegistryTest is BaseTest {
     }
 
     function addType(
-        FundingToken nftReg,
+        DripToken nftReg,
         uint128 nftTypeId,
         uint64 limit,
         uint128 minAmt,
@@ -68,7 +68,7 @@ contract TokenRegistryTest is BaseTest {
         dai = new TestDai();
         pool = new DaiPool(CYCLE_SECS, dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
-        nftRegistry = new FundingToken(pool);
+        nftRegistry = new DripToken(pool);
         // testing addStreamingType function
         builder = new Builder();
         nftRegistry.init(
@@ -462,7 +462,7 @@ contract TokenRegistryTest is BaseTest {
     }
 
     function testDrip() public {
-        FundingToken projectB = new FundingToken(pool);
+        DripToken projectB = new DripToken(pool);
         address arbitraryDripReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
@@ -533,7 +533,7 @@ contract TokenRegistryTest is BaseTest {
 
     function testDripWithInit() public {
         address alice = address(0x123);
-        FundingToken projectB = new FundingToken(pool);
+        DripToken projectB = new DripToken(pool);
 
         uint128 typeId = 0;
         uint64 limit = 1;

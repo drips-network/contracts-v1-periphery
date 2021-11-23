@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
-import {DripsReceiver, FundingToken, InputType} from "./../nft.sol";
+import {DripsReceiver, DripToken, InputType} from "./../nft.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
@@ -47,7 +47,7 @@ contract RegistryTest is BaseTest {
             streaming: true
         });
 
-        FundingToken nftRegistry = radicleRegistry.newProject(
+        DripToken nftRegistry = radicleRegistry.newProject(
             name,
             symbol,
             address(this),
