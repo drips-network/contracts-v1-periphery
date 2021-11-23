@@ -9,7 +9,7 @@ import "openzeppelin-contracts/access/Ownable.sol";
 import {IBuilder} from "./builder.sol";
 import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
 
-struct InputNFTType {
+struct InputType {
     uint128 nftTypeId;
     uint64 limit;
     // minimum amtPerSecond or minGiveAmt
@@ -18,7 +18,7 @@ struct InputNFTType {
     string ipfsHash;
 }
 
-contract FundingNFT is ERC721, Ownable {
+contract DripsToken is ERC721, Ownable {
     address public immutable deployer;
     DaiPool public immutable pool;
     IDai public immutable dai;
@@ -30,7 +30,7 @@ contract FundingNFT is ERC721, Ownable {
     string public contractURI;
     bool public initialized;
 
-    struct NFTType {
+    struct Type {
         uint64 limit;
         uint64 minted;
         uint128 minAmt;
@@ -38,27 +38,27 @@ contract FundingNFT is ERC721, Ownable {
         string ipfsHash;
     }
 
-    struct NFT {
+    struct Token {
         uint64 timeMinted;
-        // amtPerSec if the NFT is streaming otherwise the amt given at mint
+        // amtPerSec if the Token is streaming otherwise the amt given at mint
         uint128 amt;
         uint128 lastBalance;
         uint64 lastUpdate;
     }
 
-    mapping(uint128 => NFTType) public nftTypes;
-    mapping(uint256 => NFT) public nfts;
+    mapping(uint128 => Type) public nftTypes;
+    mapping(uint256 => Token) public nfts;
 
     // events
-    event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmt, bool streaming);
-    event NewStreamingNFT(
+    event NewType(uint128 indexed nftType, uint64 limit, uint128 minAmt, bool streaming);
+    event NewStreamingToken(
         uint256 indexed tokenId,
         address indexed receiver,
         uint128 indexed typeId,
         uint128 topUp,
         uint128 amtPerSec
     );
-    event NewNFT(
+    event NewToken(
         uint256 indexed tokenId,
         address indexed receiver,
         uint128 indexed typeId,
@@ -86,7 +86,7 @@ contract FundingNFT is ERC721, Ownable {
         string calldata symbol_,
         address owner,
         string calldata contractURI_,
-        InputNFTType[] memory inputNFTTypes,
+        InputType[] memory inputTypes,
         IBuilder builder_,
         DripsReceiver[] memory drips
     ) public {
@@ -97,7 +97,7 @@ contract FundingNFT is ERC721, Ownable {
         _name = name_;
         _symbol = symbol_;
         _changeBuilder(builder_);
-        _addTypes(inputNFTTypes);
+        _addTypes(inputTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
         if (drips.length > 0) {
@@ -120,18 +120,18 @@ contract FundingNFT is ERC721, Ownable {
         emit NewBuilder(newBuilder);
     }
 
-    function addTypes(InputNFTType[] memory inputNFTTypes) public onlyOwner {
-        _addTypes(inputNFTTypes);
+    function addTypes(InputType[] memory inputTypes) public onlyOwner {
+        _addTypes(inputTypes);
     }
 
-    function _addTypes(InputNFTType[] memory inputNFTTypes) internal {
-        for (uint256 i = 0; i < inputNFTTypes.length; i++) {
+    function _addTypes(InputType[] memory inputTypes) internal {
+        for (uint256 i = 0; i < inputTypes.length; i++) {
             _addType(
-                inputNFTTypes[i].nftTypeId,
-                inputNFTTypes[i].limit,
-                inputNFTTypes[i].minAmt,
-                inputNFTTypes[i].ipfsHash,
-                inputNFTTypes[i].streaming
+                inputTypes[i].nftTypeId,
+                inputTypes[i].limit,
+                inputTypes[i].minAmt,
+                inputTypes[i].ipfsHash,
+                inputTypes[i].streaming
             );
         }
     }
@@ -168,7 +168,7 @@ contract FundingNFT is ERC721, Ownable {
         nftTypes[newTypeId].limit = limit;
         nftTypes[newTypeId].ipfsHash = ipfsHash;
         nftTypes[newTypeId].streaming = streaming_;
-        emit NewNFTType(newTypeId, limit, minAmt, streaming_);
+        emit NewType(newTypeId, limit, minAmt, streaming_);
     }
 
     function createTokenId(uint128 id, uint128 nftType) public pure returns (uint256 tokenId) {
@@ -219,7 +219,7 @@ contract FundingNFT is ERC721, Ownable {
         // one time give instead of streaming
         pool.giveFromSubSender(newTokenId, address(this), giveAmt);
         nfts[newTokenId].amt = giveAmt;
-        emit NewNFT(newTokenId, nftReceiver, typeId, giveAmt);
+        emit NewToken(newTokenId, nftReceiver, typeId, giveAmt);
     }
 
     function _mintInternal(
@@ -231,7 +231,7 @@ contract FundingNFT is ERC721, Ownable {
         newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
         _mint(nftReceiver, newTokenId);
         nfts[newTokenId].timeMinted = uint64(block.timestamp);
-        // transfer currency to NFT registry
+        // transfer currency to Token registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
     }
 
@@ -258,7 +258,7 @@ contract FundingNFT is ERC721, Ownable {
         nfts[newTokenId].amt = amtPerSec;
         nfts[newTokenId].lastUpdate = uint64(block.timestamp);
         nfts[newTokenId].lastBalance = topUpAmt;
-        emit NewStreamingNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
+        emit NewStreamingToken(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
     function collect(DripsReceiver[] calldata currDrips)
@@ -350,7 +350,7 @@ contract FundingNFT is ERC721, Ownable {
     function withdrawable(uint256 tokenId) public view returns (uint128) {
         require(_exists(tokenId), "nonexistent-token");
         if (nftTypes[tokenType(tokenId)].streaming == false) return 0;
-        NFT storage nft = nfts[tokenId];
+        Token storage nft = nfts[tokenId];
         uint64 spentUntil = uint64(block.timestamp);
         uint64 minSpentUntil = nft.timeMinted + cycleSecs;
         if (spentUntil < minSpentUntil) spentUntil = minSpentUntil;
@@ -361,11 +361,11 @@ contract FundingNFT is ERC721, Ownable {
 
     function activeUntil(uint256 tokenId) public view returns (uint128) {
         require(_exists(tokenId), "nonexistent-token");
-        NFTType storage nftType = nftTypes[tokenType(tokenId)];
+        Type storage nftType = nftTypes[tokenType(tokenId)];
         if (nftType.streaming == false || nftType.minAmt == 0) {
             return type(uint128).max;
         }
-        NFT storage nft = nfts[tokenId];
+        Token storage nft = nfts[tokenId];
         return nft.lastUpdate + nft.lastBalance / nft.amt - 1;
     }
 

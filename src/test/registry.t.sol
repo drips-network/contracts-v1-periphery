@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
-import {DripsReceiver, FundingNFT, InputNFTType} from "./../nft.sol";
+import {DripsReceiver, DripsToken, InputType} from "./../token.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
@@ -24,22 +24,22 @@ contract RegistryTest is BaseTest {
         radicleRegistry = new RadicleRegistry(pool, builder, address(this));
     }
 
-    function newNewNFTRegistry() public returns (address) {
+    function newNewTokenRegistry() public returns (address) {
         string memory name = "First Funding Project";
         string memory symbol = "FFP";
         string memory ipfsHash = "ipfs";
         uint64 limitTypeZero = 100;
         uint64 limitTypeOne = 200;
 
-        InputNFTType[] memory nftTypes = new InputNFTType[](2);
-        nftTypes[0] = InputNFTType({
+        InputType[] memory nftTypes = new InputType[](2);
+        nftTypes[0] = InputType({
             nftTypeId: 0,
             limit: limitTypeZero,
             minAmt: 10,
             ipfsHash: "",
             streaming: true
         });
-        nftTypes[1] = InputNFTType({
+        nftTypes[1] = InputType({
             nftTypeId: 1,
             limit: limitTypeOne,
             minAmt: 20,
@@ -47,7 +47,7 @@ contract RegistryTest is BaseTest {
             streaming: true
         });
 
-        FundingNFT nftRegistry = radicleRegistry.newProject(
+        DripsToken nftRegistry = radicleRegistry.newProject(
             name,
             symbol,
             address(this),
@@ -70,12 +70,12 @@ contract RegistryTest is BaseTest {
         return address(nftRegistry);
     }
 
-    function testNewNFTRegistry() public {
-        newNewNFTRegistry();
+    function testNewTokenRegistry() public {
+        newNewTokenRegistry();
     }
 
     function testProjectAddr() public {
-        address nftRegistry = newNewNFTRegistry();
+        address nftRegistry = newNewTokenRegistry();
         assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
         assertEq(address(radicleRegistry.projectAddr(1)), address(0));
     }
