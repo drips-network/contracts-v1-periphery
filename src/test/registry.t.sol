@@ -3,23 +3,27 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
-import {DaiPool} from "../../lib/radicle-streaming/src/DaiPool.sol";
+import {DaiDripsHub} from "../../lib/radicle-streaming/src/DaiDripsHub.sol";
 import {DripsReceiver, DripsToken, InputType} from "./../token.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
-import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 
-contract RegistryTest is BaseTest {
+interface Hevm {
+    function warp(uint256) external;
+}
+
+contract RegistryTest is DSTest {
     RadicleRegistry public radicleRegistry;
     Builder public builder;
-    DaiPool public pool;
+    DaiDripsHub public pool;
     Dai public dai;
     Hevm public hevm;
+    uint64 public constant CYCLE_SECS = 30 days;
 
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
-        pool = new DaiPool(CYCLE_SECS, dai);
+        pool = new DaiDripsHub(CYCLE_SECS, dai);
         builder = new Builder();
         radicleRegistry = new RadicleRegistry(pool, builder, address(this));
     }
@@ -59,7 +63,7 @@ contract RegistryTest is BaseTest {
         assertEq(nftRegistry.name(), name);
         assertEq(nftRegistry.symbol(), symbol);
         assertEq(nftRegistry.contractURI(), ipfsHash);
-        assertEq(address(nftRegistry.pool()), address(pool));
+        assertEq(address(nftRegistry.hub()), address(pool));
         assertEq(address(radicleRegistry.projectAddr(0)), address(nftRegistry));
         (uint64 limit, uint64 minted, uint128 minAmtPerSec, , ) = nftRegistry.nftTypes(0);
         assertEq(limit, limitTypeZero);

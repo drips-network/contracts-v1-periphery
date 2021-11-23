@@ -32,7 +32,7 @@ dapp build
 [ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # one day secs
 message Funding Contracts Deployment
 
-[ -z "$FUNDING_POOL" ] && FUNDING_POOL=$(dapp create DaiPool $CYCLE_SECS $DAI)
+[ -z "$FUNDING_POOL" ] && FUNDING_POOL=$(dapp create DaiDripsHub $CYCLE_SECS $DAI)
 echo "Funding Pool Contract: $FUNDING_POOL"
 
 [ -z "$BUILDER" ] && BUILDER=$(dapp create Builder)
@@ -62,7 +62,7 @@ cat $DEPLOYMENT_FILE
 
 message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
-  dapp verify-contract --async 'lib/radicle-streaming/src/DaiPool.sol:DaiPool' $FUNDING_POOL $CYCLE_SECS $DAI
+  dapp verify-contract --async 'lib/radicle-streaming/src/DaiDripsHub.sol:DaiDripsHub' $FUNDING_POOL $CYCLE_SECS $DAI
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $FUNDING_POOL $BUILDER $GOVERNANCE
   dapp verify-contract --async 'src/builder.sol:Builder' $BUILDER
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')

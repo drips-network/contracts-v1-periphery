@@ -3,10 +3,10 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import "./../token.sol";
-import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Builder} from "../builder.sol";
+import "../../lib/ds-test/src/test.sol";
 
 contract TestDai is Dai {
     function mint(uint256 amount) public {
@@ -14,15 +14,20 @@ contract TestDai is Dai {
     }
 }
 
-contract TokenRegistryTest is BaseTest {
+interface Hevm {
+    function warp(uint256) external;
+}
+
+contract TokenRegistryTest is DSTest {
     DripsToken public nftRegistry;
     address public nftRegistry_;
-    DaiPool public pool;
+    DaiDripsHub public pool;
     TestDai public dai;
     Builder public builder;
     Hevm public hevm;
 
     uint256 public constant ONE_TRILLION_DAI = (1 ether * 10**12);
+    uint64 public constant CYCLE_SECS = 30 days;
 
     uint128 public defaultMinAmtPerSec;
 
@@ -66,7 +71,7 @@ contract TokenRegistryTest is BaseTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new TestDai();
-        pool = new DaiPool(CYCLE_SECS, dai);
+        pool = new DaiDripsHub(CYCLE_SECS, dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new DripsToken(pool);
         // testing addStreamingType function
@@ -84,6 +89,10 @@ contract TokenRegistryTest is BaseTest {
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);
+    }
+
+    function fundingInSeconds(uint256 fundingPerCycle) public pure returns (uint256) {
+        return fundingPerCycle / CYCLE_SECS;
     }
 
     function mint(uint128 amtPerSec, uint128 amtTopUp) public returns (uint256 tokenId) {
