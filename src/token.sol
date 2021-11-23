@@ -3,11 +3,11 @@ pragma solidity ^0.8.7;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {DripsReceiver, Receiver} from "../lib/radicle-streaming/src/Pool.sol";
+import {DripsReceiver, Receiver} from "../lib/radicle-streaming/src/DripsHub.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
 import {IBuilder} from "./builder.sol";
-import {DaiPool, IDai} from "../lib/radicle-streaming/src/DaiPool.sol";
+import {DaiDripsHub, IDai} from "../lib/radicle-streaming/src/DaiDripsHub.sol";
 
 struct InputType {
     uint128 nftTypeId;
@@ -20,7 +20,7 @@ struct InputType {
 
 contract DripsToken is ERC721, Ownable {
     address public immutable deployer;
-    DaiPool public immutable pool;
+    DaiDripsHub public immutable hub;
     IDai public immutable dai;
     uint64 public immutable cycleSecs;
     IBuilder public builder;
@@ -69,11 +69,11 @@ contract DripsToken is ERC721, Ownable {
     event NewBuilder(IBuilder builder);
     event DripsUpdated(DripsReceiver[] drips);
 
-    constructor(DaiPool pool_) ERC721("", "") {
+    constructor(DaiDripsHub hub_) ERC721("", "") {
         deployer = msg.sender;
-        pool = pool_;
-        dai = pool_.dai();
-        cycleSecs = pool_.cycleSecs();
+        hub = hub_;
+        dai = hub_.dai();
+        cycleSecs = hub_.cycleSecs();
     }
 
     modifier onlyTokenHolder(uint256 tokenId) {
@@ -103,7 +103,7 @@ contract DripsToken is ERC721, Ownable {
         if (drips.length > 0) {
             _changeDripReceiver(new DripsReceiver[](0), drips);
         }
-        dai.approve(address(pool), type(uint256).max);
+        dai.approve(address(hub), type(uint256).max);
     }
 
     function changeContractURI(string calldata contractURI_) public onlyOwner {
@@ -217,7 +217,7 @@ contract DripsToken is ERC721, Ownable {
         require(nftTypes[typeId].streaming == false, "type-is-streaming");
         newTokenId = _mintInternal(nftReceiver, typeId, giveAmt);
         // one time give instead of streaming
-        pool.giveFromSubSender(newTokenId, address(this), giveAmt);
+        hub.give(newTokenId, address(this), giveAmt);
         nfts[newTokenId].amt = giveAmt;
         emit NewToken(newTokenId, nftReceiver, typeId, giveAmt);
     }
@@ -247,14 +247,7 @@ contract DripsToken is ERC721, Ownable {
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
         // start streaming
-        pool.updateSubSender(
-            newTokenId,
-            0,
-            0,
-            _receivers(0),
-            int128(topUpAmt),
-            _receivers(amtPerSec)
-        );
+        hub.updateSender(newTokenId, 0, 0, _receivers(0), int128(topUpAmt), _receivers(amtPerSec));
         nfts[newTokenId].amt = amtPerSec;
         nfts[newTokenId].lastUpdate = uint64(block.timestamp);
         nfts[newTokenId].lastBalance = topUpAmt;
@@ -266,7 +259,7 @@ contract DripsToken is ERC721, Ownable {
         onlyOwner
         returns (uint128 collected, uint128 dripped)
     {
-        (, dripped) = pool.collect(address(this), currDrips);
+        (, dripped) = hub.collect(address(this), currDrips);
         collected = uint128(dai.balanceOf(address(this)));
         dai.transfer(owner(), collected);
     }
@@ -276,7 +269,7 @@ contract DripsToken is ERC721, Ownable {
         view
         returns (uint128 toCollect, uint128 toDrip)
     {
-        (toCollect, toDrip) = pool.collectable(address(this), currDrips);
+        (toCollect, toDrip) = hub.collectable(address(this), currDrips);
         toCollect += uint128(dai.balanceOf(address(this)));
     }
 
@@ -297,7 +290,7 @@ contract DripsToken is ERC721, Ownable {
         require(nftTypes[tokenType(tokenId)].streaming, "not-a-streaming-nft");
         dai.transferFrom(msg.sender, address(this), topUpAmt);
         Receiver[] memory receivers = _tokenReceivers(tokenId);
-        (uint128 newBalance, ) = pool.updateSubSender(
+        (uint128 newBalance, ) = hub.updateSender(
             tokenId,
             nfts[tokenId].lastUpdate,
             nfts[tokenId].lastBalance,
@@ -319,7 +312,7 @@ contract DripsToken is ERC721, Ownable {
             withdrawAmt = withdrawableAmt;
         }
         Receiver[] memory receivers = _tokenReceivers(tokenId);
-        (uint128 newBalance, int128 realBalanceDelta) = pool.updateSubSender(
+        (uint128 newBalance, int128 realBalanceDelta) = hub.updateSender(
             tokenId,
             nfts[tokenId].lastUpdate,
             nfts[tokenId].lastBalance,
@@ -343,7 +336,7 @@ contract DripsToken is ERC721, Ownable {
     function _changeDripReceiver(DripsReceiver[] memory currDrips, DripsReceiver[] memory newDrips)
         internal
     {
-        pool.setDripsReceivers(currDrips, newDrips);
+        hub.setDripsReceivers(currDrips, newDrips);
         emit DripsUpdated(newDrips);
     }
 

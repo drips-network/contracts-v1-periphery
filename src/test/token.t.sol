@@ -3,10 +3,11 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import "./../token.sol";
-import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
+import {Hevm} from "./hevm.t.sol";
 import {Builder} from "../builder.sol";
+import "../../lib/ds-test/src/test.sol";
 
 contract TestDai is Dai {
     function mint(uint256 amount) public {
@@ -14,15 +15,16 @@ contract TestDai is Dai {
     }
 }
 
-contract TokenRegistryTest is BaseTest {
+contract TokenRegistryTest is DSTest {
     DripsToken public nftRegistry;
     address public nftRegistry_;
-    DaiPool public pool;
+    DaiDripsHub public hub;
     TestDai public dai;
     Builder public builder;
     Hevm public hevm;
 
     uint256 public constant ONE_TRILLION_DAI = (1 ether * 10**12);
+    uint64 public constant CYCLE_SECS = 30 days;
 
     uint128 public defaultMinAmtPerSec;
 
@@ -33,7 +35,7 @@ contract TokenRegistryTest is BaseTest {
     }
 
     function dripPercent(uint32 percent) public view returns (uint32 weight) {
-        return (pool.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
+        return (hub.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
     }
 
     function addStreamingType(
@@ -66,9 +68,9 @@ contract TokenRegistryTest is BaseTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new TestDai();
-        pool = new DaiPool(CYCLE_SECS, dai);
+        hub = new DaiDripsHub(CYCLE_SECS, dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
-        nftRegistry = new DripsToken(pool);
+        nftRegistry = new DripsToken(hub);
         // testing addStreamingType function
         builder = new Builder();
         nftRegistry.init(
@@ -84,6 +86,10 @@ contract TokenRegistryTest is BaseTest {
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);
+    }
+
+    function fundingInSeconds(uint256 fundingPerCycle) public pure returns (uint256) {
+        return fundingPerCycle / CYCLE_SECS;
     }
 
     function mint(uint128 amtPerSec, uint128 amtTopUp) public returns (uint256 tokenId) {
@@ -467,7 +473,7 @@ contract TokenRegistryTest is BaseTest {
     }
 
     function testDrip() public {
-        DripsToken projectB = new DripsToken(pool);
+        DripsToken projectB = new DripsToken(hub);
         address arbitraryDripReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
@@ -528,7 +534,7 @@ contract TokenRegistryTest is BaseTest {
         );
 
         // arbitraryDripReceiver gets 10%
-        pool.collect(arbitraryDripReceiver, noDrips());
+        hub.collect(arbitraryDripReceiver, noDrips());
         assertEq(
             dai.balanceOf(arbitraryDripReceiver),
             (CYCLE_SECS * defaultMinAmtPerSec) / 10,
@@ -538,7 +544,7 @@ contract TokenRegistryTest is BaseTest {
 
     function testDripWithInit() public {
         address alice = address(0x123);
-        DripsToken projectB = new DripsToken(pool);
+        DripsToken projectB = new DripsToken(hub);
 
         uint128 typeId = 0;
         uint64 limit = 1;
@@ -572,7 +578,7 @@ contract TokenRegistryTest is BaseTest {
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 6,
             "project A didn't receive drips"
         );
-        pool.collect(alice, noDrips());
+        hub.collect(alice, noDrips());
         assertEq(amtAlice, ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 4);
         assertEq(amtAlice, dai.balanceOf(alice), "incorrect-dai-amount");
     }

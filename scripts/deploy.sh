@@ -32,13 +32,13 @@ dapp build
 [ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # one day secs
 message Funding Contracts Deployment
 
-[ -z "$FUNDING_POOL" ] && FUNDING_POOL=$(dapp create DaiPool $CYCLE_SECS $DAI)
-echo "Funding Pool Contract: $FUNDING_POOL"
+[ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(dapp create DaiDripsHub $CYCLE_SECS $DAI)
+echo "Drips Hub Contract: $DRIPS_HUB"
 
 [ -z "$BUILDER" ] && BUILDER=$(dapp create Builder)
 echo "Builder Contract: $BUILDER"
 
-[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $FUNDING_POOL $BUILDER $GOVERNANCE)
+[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $DRIPS_HUB $BUILDER $GOVERNANCE)
 
 echo "Radicle Registry Contract: $RADICLE_REGISTRY"
 
@@ -46,7 +46,7 @@ touch $DEPLOYMENT_FILE
 addValuesToFile $DEPLOYMENT_FILE <<EOF
 {
     "CONTRACT_DAI"               : "$DAI",
-    "CONTRACT_FUNDING_POOL"      : "$FUNDING_POOL",
+    "CONTRACT_DRIPS_HUB"      : "$DRIPS_HUB",
     "CONTRACT_RADICLE_REGISTRY"  : "$RADICLE_REGISTRY",
     "CONTRACT_BUILDER"           : "$BUILDER",
     "NETWORK"                    : "$(seth chain)",
@@ -62,11 +62,11 @@ cat $DEPLOYMENT_FILE
 
 message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
-  dapp verify-contract --async 'lib/radicle-streaming/src/DaiPool.sol:DaiPool' $FUNDING_POOL $CYCLE_SECS $DAI
-  dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $FUNDING_POOL $BUILDER $GOVERNANCE
+  dapp verify-contract --async 'lib/radicle-streaming/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB $CYCLE_SECS $DAI
+  dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $DRIPS_HUB $BUILDER $GOVERNANCE
   dapp verify-contract --async 'src/builder.sol:Builder' $BUILDER
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
-  dapp verify-contract --async 'src/token.sol:DripsToken' $TOKEN_TEMPLATE $FUNDING_POOL
+  dapp verify-contract --async 'src/token.sol:DripsToken' $TOKEN_TEMPLATE $DRIPS_HUB
 else
     echo "No ETHERSCAN_API_KEY for contract verification provided"
 fi

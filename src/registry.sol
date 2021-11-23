@@ -2,7 +2,7 @@
 pragma solidity ^0.8.7;
 
 import {DripsReceiver, DripsToken, InputType} from "./token.sol";
-import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
+import {DaiDripsHub} from "../lib/radicle-streaming/src/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
 
@@ -21,13 +21,13 @@ contract RadicleRegistry {
     uint256 public nextId;
 
     constructor(
-        DaiPool pool_,
+        DaiDripsHub hub_,
         IBuilder builder_,
         address governance_
     ) {
         governance = governance_;
         changeBuilder(builder_);
-        dripTokenTemplate = new DripsToken(pool_);
+        dripTokenTemplate = new DripsToken(hub_);
     }
 
     function newProject(
