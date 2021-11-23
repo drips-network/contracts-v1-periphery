@@ -377,15 +377,31 @@ contract NFTRegistryTest is BaseTest {
         uint256 amtPerCycle = 10 ether;
         uint128 amtPerSec = uint128(fundingInSeconds(amtPerCycle));
         uint256 tokenId = mint(amtPerSec, amtTopUp);
-        assertEq(nftRegistry.influence(tokenId), amtPerSec);
+        // zero influence at mint block.timestamp
+        assertEq(nftRegistry.influence(tokenId), 0);
+
+        uint256 initTime = block.timestamp;
 
         // enough for 3 cycles
         hevm.warp(block.timestamp + CYCLE_SECS * 3 - 1);
-        assertEq(nftRegistry.influence(tokenId), amtPerSec);
+        assertTrue(nftRegistry.streaming(tokenId), "not-streaming-token");
+        assertEq(nftRegistry.influence(tokenId), (block.timestamp - initTime) * amtPerSec);
 
         // influence should stop after token is inactive
         hevm.warp(block.timestamp + 1);
         assertEq(nftRegistry.influence(tokenId), 0);
+
+        // one time support
+        uint128 minGiveAmt = 100 ether;
+        uint128 nftTypeId = 2;
+        uint64 limit = 1;
+        uint128 giveAmt = 110 ether;
+        tokenId = setup1TimeSupport(minGiveAmt, limit, nftTypeId, giveAmt);
+
+        assertTrue(nftRegistry.streaming(tokenId) == false, "streaming-support");
+        assertEq(nftRegistry.influence(tokenId), giveAmt);
+        hevm.warp(block.timestamp + 1000 days);
+        assertEq(nftRegistry.influence(tokenId), giveAmt);
     }
 
     function testChangeContractURI() public {
@@ -577,23 +593,31 @@ contract NFTRegistryTest is BaseTest {
         nftRegistry.tokenURI(1234);
     }
 
-    function testOneTimeGive() public {
-        uint128 minGiveAmt = 100 ether;
-        uint128 nftTypeId = 2;
-        uint64 limit = 1;
+    function setup1TimeSupport(
+        uint128 minGiveAmt,
+        uint64 limit,
+        uint128 nftTypeId,
+        uint128 giveAmt
+    ) public returns (uint256 tokenId) {
         addNFTType(nftRegistry, nftTypeId, limit, minGiveAmt, false);
-
-        uint128 giveAmt = 110 ether;
         dai.approve(address(nftRegistry), uint256(giveAmt));
 
         uint256 preBalance = dai.balanceOf(address(this));
         uint256 tokenId = nftRegistry.mint(address(this), nftTypeId, giveAmt);
         assertEq(dai.balanceOf(address(this)), preBalance - giveAmt);
 
-        preBalance = dai.balanceOf(nftRegistry_);
+        assertEq(nftRegistry.activeUntil(tokenId), type(uint128).max);
+        return tokenId;
+    }
+
+    function testOneTimeGive() public {
+        uint128 minGiveAmt = 100 ether;
+        uint128 nftTypeId = 2;
+        uint64 limit = 1;
+        uint128 giveAmt = 110 ether;
+        setup1TimeSupport(minGiveAmt, limit, nftTypeId, giveAmt);
+        uint256 preBalance = dai.balanceOf(nftRegistry_);
         (uint128 collected, ) = nftRegistry.collect(noDrips());
         assertEq(collected, giveAmt);
-
-        assertEq(nftRegistry.activeUntil(tokenId), type(uint128).max);
     }
 }

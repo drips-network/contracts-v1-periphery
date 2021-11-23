@@ -43,7 +43,7 @@ contract FundingNFT is ERC721, Ownable {
     }
 
     struct NFT {
-        uint64 minted;
+        uint64 timeMinted;
         // amtPerSec if the NFT is streaming otherwise the amt given at mint
         uint128 amt;
     }
@@ -231,7 +231,7 @@ contract FundingNFT is ERC721, Ownable {
         require(nftTypes[typeId].minted++ < nftTypes[typeId].limit, "nft-type-reached-limit");
         newTokenId = createTokenId(nftTypes[typeId].minted, typeId);
         _mint(nftReceiver, newTokenId);
-        nfts[newTokenId].minted = uint64(block.timestamp);
+        nfts[newTokenId].timeMinted = uint64(block.timestamp);
         // transfer currency to NFT registry
         dai.transferFrom(nftReceiver, address(this), topUpAmt);
     }
@@ -336,7 +336,7 @@ contract FundingNFT is ERC721, Ownable {
         );
 
         uint128 amtLocked = 0;
-        uint64 fullCycleTimestamp = nfts[tokenId].minted + uint64(pool.cycleSecs());
+        uint64 fullCycleTimestamp = nfts[tokenId].timeMinted + uint64(pool.cycleSecs());
         if (block.timestamp < fullCycleTimestamp) {
             amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
@@ -412,7 +412,10 @@ contract FundingNFT is ERC721, Ownable {
 
     function influence(uint256 tokenId) public view returns (uint256 influenceScore) {
         if (active(tokenId)) {
-            return nfts[tokenId].amt;
+            if (streaming(tokenId) == false) {
+                return nfts[tokenId].amt;
+            }
+            return nfts[tokenId].amt * (block.timestamp - nfts[tokenId].timeMinted);
         }
         return 0;
     }
