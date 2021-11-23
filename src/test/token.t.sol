@@ -5,6 +5,7 @@ import "ds-test/test.sol";
 import "./../token.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
+import {Hevm} from "./hevm.t.sol";
 import {Builder} from "../builder.sol";
 import "../../lib/ds-test/src/test.sol";
 
@@ -12,10 +13,6 @@ contract TestDai is Dai {
     function mint(uint256 amount) public {
         _mint(msg.sender, amount);
     }
-}
-
-interface Hevm {
-    function warp(uint256) external;
 }
 
 contract TokenRegistryTest is DSTest {

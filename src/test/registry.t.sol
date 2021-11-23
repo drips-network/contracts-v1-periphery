@@ -5,12 +5,9 @@ import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
 import {DaiDripsHub} from "../../lib/radicle-streaming/src/DaiDripsHub.sol";
 import {DripsReceiver, DripsToken, InputType} from "./../token.sol";
+import {Hevm} from "./hevm.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
-
-interface Hevm {
-    function warp(uint256) external;
-}
 
 contract RegistryTest is DSTest {
     RadicleRegistry public radicleRegistry;
