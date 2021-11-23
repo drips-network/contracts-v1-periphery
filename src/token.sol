@@ -247,14 +247,7 @@ contract DripsToken is ERC721, Ownable {
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
         // start streaming
-        hub.updateSender(
-            newTokenId,
-            0,
-            0,
-            _receivers(0),
-            int128(topUpAmt),
-            _receivers(amtPerSec)
-        );
+        hub.updateSender(newTokenId, 0, 0, _receivers(0), int128(topUpAmt), _receivers(amtPerSec));
         nfts[newTokenId].amt = amtPerSec;
         nfts[newTokenId].lastUpdate = uint64(block.timestamp);
         nfts[newTokenId].lastBalance = topUpAmt;
