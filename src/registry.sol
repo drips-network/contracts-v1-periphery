@@ -17,7 +17,7 @@ contract RadicleRegistry {
         _;
     }
 
-    DripToken public immutable fundingTokenTemplate;
+    DripToken public immutable dripTokenTemplate;
     uint256 public nextId;
 
     constructor(
@@ -27,7 +27,7 @@ contract RadicleRegistry {
     ) {
         governance = governance_;
         changeBuilder(builder_);
-        fundingTokenTemplate = new DripToken(pool_);
+        dripTokenTemplate = new DripToken(pool_);
     }
 
     function newProject(
@@ -40,7 +40,7 @@ contract RadicleRegistry {
     ) public returns (DripToken) {
         bytes32 salt = bytes32(nextId++);
         DripToken fundingToken = DripToken(
-            Clones.cloneDeterministic(address(fundingTokenTemplate), salt)
+            Clones.cloneDeterministic(address(dripTokenTemplate), salt)
         );
         fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
         emit NewProject(fundingToken, projectOwner, name);
@@ -53,7 +53,7 @@ contract RadicleRegistry {
         }
         return
             DripToken(
-                Clones.predictDeterministicAddress(address(fundingTokenTemplate), bytes32(id))
+                Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id))
             );
     }
 
