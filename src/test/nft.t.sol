@@ -593,11 +593,10 @@ contract NFTRegistryTest is BaseTest {
         dai.approve(address(nftRegistry), uint256(giveAmt));
 
         uint256 preBalance = dai.balanceOf(address(this));
-        uint256 tokenId = nftRegistry.mint(address(this), nftTypeId, giveAmt);
+        tokenId = nftRegistry.mint(address(this), nftTypeId, giveAmt);
         assertEq(dai.balanceOf(address(this)), preBalance - giveAmt);
 
         assertEq(nftRegistry.activeUntil(tokenId), type(uint128).max);
-        return tokenId;
     }
 
     function testOneTimeGive() public {

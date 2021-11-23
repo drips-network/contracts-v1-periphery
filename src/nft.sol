@@ -22,6 +22,7 @@ contract FundingNFT is ERC721, Ownable {
     address public immutable deployer;
     DaiPool public immutable pool;
     IDai public immutable dai;
+    uint64 public immutable cycleSecs;
     IBuilder public builder;
 
     string internal _name;
@@ -70,6 +71,7 @@ contract FundingNFT is ERC721, Ownable {
         deployer = msg.sender;
         pool = pool_;
         dai = pool_.dai();
+        cycleSecs = pool_.cycleSecs();
     }
 
     modifier onlyTokenHolder(uint256 tokenId) {
@@ -155,7 +157,7 @@ contract FundingNFT is ERC721, Ownable {
         uint64 limit,
         uint128 minAmt,
         string memory ipfsHash,
-        bool streaming
+        bool streaming_
     ) internal {
         require(nftTypes[newTypeId].limit == 0, "nft-type-already-exists");
         require(limit > 0, "zero-limit-not-allowed");
@@ -163,8 +165,8 @@ contract FundingNFT is ERC721, Ownable {
         nftTypes[newTypeId].minAmt = minAmt;
         nftTypes[newTypeId].limit = limit;
         nftTypes[newTypeId].ipfsHash = ipfsHash;
-        nftTypes[newTypeId].streaming = streaming;
-        emit NewNFTType(newTypeId, limit, minAmt, streaming);
+        nftTypes[newTypeId].streaming = streaming_;
+        emit NewNFTType(newTypeId, limit, minAmt, streaming_);
     }
 
     function createTokenId(uint128 id, uint128 nftType) public pure returns (uint256 tokenId) {
@@ -239,7 +241,6 @@ contract FundingNFT is ERC721, Ownable {
     ) public returns (uint256 newTokenId) {
         require(amtPerSec >= nftTypes[typeId].minAmt, "amt-per-sec-too-low");
         require(nftTypes[typeId].streaming, "nft-type-not-streaming");
-        uint128 cycleSecs = uint128(pool.cycleSecs());
         require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
@@ -328,12 +329,12 @@ contract FundingNFT is ERC721, Ownable {
         );
 
         uint128 amtLocked = 0;
-        uint64 fullCycleTimestamp = nfts[tokenId].timeMinted + uint64(pool.cycleSecs());
+        uint64 fullCycleTimestamp = nfts[tokenId].timeMinted + cycleSecs;
         if (block.timestamp < fullCycleTimestamp) {
             amtLocked = uint128(fullCycleTimestamp - block.timestamp) * amtPerSec;
         }
 
-        //  mint requires topUp to be at least amtPerSec * pool.cycleSecs therefore
+        //  mint requires topUp to be at least amtPerSec * cycleSecs therefore
         // if amtLocked > 0 => withdrawable_ > amtLocked
         return withdrawable_ - amtLocked;
     }
@@ -378,6 +379,7 @@ contract FundingNFT is ERC721, Ownable {
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "nonexistent-token");
         string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
+        uint128 amtPerCycle = nfts[tokenId].amt * cycleSecs;
         if (bytes(ipfsHash).length == 0) {
             return
                 builder.buildMetaData(
@@ -385,7 +387,7 @@ contract FundingNFT is ERC721, Ownable {
                     uint128(tokenId),
                     tokenType(tokenId),
                     nftTypes[tokenType(tokenId)].streaming,
-                    nfts[tokenId].amt * pool.cycleSecs(),
+                    amtPerCycle,
                     active(tokenId)
                 );
         }
@@ -395,14 +397,13 @@ contract FundingNFT is ERC721, Ownable {
                 uint128(tokenId),
                 tokenType(tokenId),
                 nftTypes[tokenType(tokenId)].streaming,
-                nfts[tokenId].amt * pool.cycleSecs(),
+                amtPerCycle,
                 active(tokenId),
                 ipfsHash
             );
     }
 
     function currLeftSecsInCycle() public view returns (uint64) {
-        uint64 cycleSecs = pool.cycleSecs();
         return cycleSecs - (uint64(block.timestamp) % cycleSecs);
     }
 
