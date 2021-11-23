@@ -2,7 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
-import "./../nft.sol";
+import "./../token.sol";
 import "../../lib/radicle-streaming/src/test/BaseTest.t.sol";
 import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";

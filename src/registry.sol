@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsReceiver, DripToken, InputType} from "./nft.sol";
+import {DripsReceiver, DripToken, InputType} from "./token.sol";
 import {DaiPool} from "../lib/radicle-streaming/src/DaiPool.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
