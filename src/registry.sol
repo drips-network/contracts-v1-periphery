@@ -21,13 +21,13 @@ contract RadicleRegistry {
     uint256 public nextId;
 
     constructor(
-        DaiDripsHub pool_,
+        DaiDripsHub hub_,
         IBuilder builder_,
         address governance_
     ) {
         governance = governance_;
         changeBuilder(builder_);
-        dripTokenTemplate = new DripsToken(pool_);
+        dripTokenTemplate = new DripsToken(hub_);
     }
 
     function newProject(

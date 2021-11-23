@@ -21,7 +21,7 @@ interface Hevm {
 contract TokenRegistryTest is DSTest {
     DripsToken public nftRegistry;
     address public nftRegistry_;
-    DaiDripsHub public pool;
+    DaiDripsHub public hub;
     TestDai public dai;
     Builder public builder;
     Hevm public hevm;
@@ -38,7 +38,7 @@ contract TokenRegistryTest is DSTest {
     }
 
     function dripPercent(uint32 percent) public view returns (uint32 weight) {
-        return (pool.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
+        return (hub.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
     }
 
     function addStreamingType(
@@ -71,9 +71,9 @@ contract TokenRegistryTest is DSTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new TestDai();
-        pool = new DaiDripsHub(CYCLE_SECS, dai);
+        hub = new DaiDripsHub(CYCLE_SECS, dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
-        nftRegistry = new DripsToken(pool);
+        nftRegistry = new DripsToken(hub);
         // testing addStreamingType function
         builder = new Builder();
         nftRegistry.init(
@@ -476,7 +476,7 @@ contract TokenRegistryTest is DSTest {
     }
 
     function testDrip() public {
-        DripsToken projectB = new DripsToken(pool);
+        DripsToken projectB = new DripsToken(hub);
         address arbitraryDripReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
@@ -537,7 +537,7 @@ contract TokenRegistryTest is DSTest {
         );
 
         // arbitraryDripReceiver gets 10%
-        pool.collect(arbitraryDripReceiver, noDrips());
+        hub.collect(arbitraryDripReceiver, noDrips());
         assertEq(
             dai.balanceOf(arbitraryDripReceiver),
             (CYCLE_SECS * defaultMinAmtPerSec) / 10,
@@ -547,7 +547,7 @@ contract TokenRegistryTest is DSTest {
 
     function testDripWithInit() public {
         address alice = address(0x123);
-        DripsToken projectB = new DripsToken(pool);
+        DripsToken projectB = new DripsToken(hub);
 
         uint128 typeId = 0;
         uint64 limit = 1;
@@ -581,7 +581,7 @@ contract TokenRegistryTest is DSTest {
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 6,
             "project A didn't receive drips"
         );
-        pool.collect(alice, noDrips());
+        hub.collect(alice, noDrips());
         assertEq(amtAlice, ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 4);
         assertEq(amtAlice, dai.balanceOf(alice), "incorrect-dai-amount");
     }
