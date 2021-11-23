@@ -36,16 +36,16 @@ contract NFTRegistryTest is BaseTest {
         return (pool.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
     }
 
-    function addStreamingNFTType(
+    function addStreamingType(
         FundingNFT nftReg,
         uint128 nftTypeId,
         uint64 limit,
         uint128 minAmtPerSec
     ) public {
-        addNFTType(nftReg, nftTypeId, limit, minAmtPerSec, true);
+        addType(nftReg, nftTypeId, limit, minAmtPerSec, true);
     }
 
-    function addNFTType(
+    function addType(
         FundingNFT nftReg,
         uint128 nftTypeId,
         uint64 limit,
@@ -69,7 +69,7 @@ contract NFTRegistryTest is BaseTest {
         pool = new DaiPool(CYCLE_SECS, dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new FundingNFT(pool);
-        // testing addStreamingNFTType function
+        // testing addStreamingType function
         builder = new Builder();
         nftRegistry.init(
             "Dummy Project",
@@ -80,7 +80,7 @@ contract NFTRegistryTest is BaseTest {
             builder,
             noDrips()
         );
-        addStreamingNFTType(nftRegistry, DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
+        addStreamingType(nftRegistry, DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
         // start with a full cycle
         hevm.warp(0);
@@ -134,7 +134,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 shouldLimit = 200;
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
-        addStreamingNFTType(nftRegistry, typeId, shouldLimit, defaultMinAmtPerSec);
+        addStreamingType(nftRegistry, typeId, shouldLimit, defaultMinAmtPerSec);
         (uint256 limit, uint256 minted, uint256 minAmtPerSec, , ) = nftRegistry.nftTypes(typeId);
         assertEq(limit, shouldLimit, "incorrect-limit");
         assertEq(minted, 0, "incorrect-minted");
@@ -153,7 +153,7 @@ contract NFTRegistryTest is BaseTest {
         );
     }
 
-    function testShouldFailDoubleNFTTypeId() public {
+    function testShouldFailDoubleTypeId() public {
         uint128 amount = 20 ether;
         dai.approve(nftRegistry_, uint256(amount));
 
@@ -204,7 +204,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 5;
         uint128 amount = 100 ether;
         dai.approve(nftRegistry_, uint256(amount));
-        addStreamingNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
+        addStreamingType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
         uint256 tokenId;
         for (uint256 i = 0; i < limit; i++) {
             tokenId = nftRegistry.mintStreaming(
@@ -224,7 +224,7 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 1;
         uint128 amount = 100 ether;
         dai.approve(nftRegistry_, uint256(amount));
-        addStreamingNFTType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
+        addStreamingType(nftRegistry, typeId, limit, defaultMinAmtPerSec);
         uint256 tokenId = nftRegistry.mintStreaming(
             address(this),
             typeId,
@@ -254,12 +254,12 @@ contract NFTRegistryTest is BaseTest {
         );
     }
 
-    function testNFTTypeConversion() public {
+    function testTypeConversion() public {
         uint128 id = 1;
         uint128 nftType = 2;
         uint256 tokenId = nftRegistry.createTokenId(id, nftType);
-        uint128 resultNFTType = nftRegistry.tokenType(tokenId);
-        assertEq(resultNFTType, nftType);
+        uint128 resultType = nftRegistry.tokenType(tokenId);
+        assertEq(resultType, nftType);
         assertEq(id, uint128(tokenId));
     }
 
@@ -267,7 +267,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 nftType = 2;
         uint64 limit = 100;
         uint128 minAmtPerSec = 0;
-        addStreamingNFTType(nftRegistry, nftType, limit, minAmtPerSec);
+        addStreamingType(nftRegistry, nftType, limit, minAmtPerSec);
         uint128 amount = 30 ether;
         dai.approve(nftRegistry_, uint256(amount));
         uint256 tokenId = nftRegistry.mintStreaming(address(this), nftType, amount, minAmtPerSec);
@@ -537,7 +537,7 @@ contract NFTRegistryTest is BaseTest {
 
         uint128 typeId = 0;
         uint64 limit = 1;
-        addStreamingNFTType(projectB, typeId, limit, defaultMinAmtPerSec);
+        addStreamingType(projectB, typeId, limit, defaultMinAmtPerSec);
 
         // drip to alice
         DripsReceiver[] memory drips = new DripsReceiver[](1);
@@ -589,7 +589,7 @@ contract NFTRegistryTest is BaseTest {
         uint128 nftTypeId,
         uint128 giveAmt
     ) public returns (uint256 tokenId) {
-        addNFTType(nftRegistry, nftTypeId, limit, minGiveAmt, false);
+        addType(nftRegistry, nftTypeId, limit, minGiveAmt, false);
         dai.approve(address(nftRegistry), uint256(giveAmt));
 
         uint256 preBalance = dai.balanceOf(address(this));

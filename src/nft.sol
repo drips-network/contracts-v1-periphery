@@ -30,7 +30,7 @@ contract FundingNFT is ERC721, Ownable {
     string public contractURI;
     bool public initialized;
 
-    struct NFTType {
+    struct Type {
         uint64 limit;
         uint64 minted;
         uint128 minAmt;
@@ -46,11 +46,11 @@ contract FundingNFT is ERC721, Ownable {
         uint64 lastUpdate;
     }
 
-    mapping(uint128 => NFTType) public nftTypes;
+    mapping(uint128 => Type) public nftTypes;
     mapping(uint256 => NFT) public nfts;
 
     // events
-    event NewNFTType(uint128 indexed nftType, uint64 limit, uint128 minAmt, bool streaming);
+    event NewType(uint128 indexed nftType, uint64 limit, uint128 minAmt, bool streaming);
     event NewStreamingNFT(
         uint256 indexed tokenId,
         address indexed receiver,
@@ -86,7 +86,7 @@ contract FundingNFT is ERC721, Ownable {
         string calldata symbol_,
         address owner,
         string calldata contractURI_,
-        InputType[] memory inputNFTTypes,
+        InputType[] memory inputTypes,
         IBuilder builder_,
         DripsReceiver[] memory drips
     ) public {
@@ -97,7 +97,7 @@ contract FundingNFT is ERC721, Ownable {
         _name = name_;
         _symbol = symbol_;
         _changeBuilder(builder_);
-        _addTypes(inputNFTTypes);
+        _addTypes(inputTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
         if (drips.length > 0) {
@@ -120,18 +120,18 @@ contract FundingNFT is ERC721, Ownable {
         emit NewBuilder(newBuilder);
     }
 
-    function addTypes(InputType[] memory inputNFTTypes) public onlyOwner {
-        _addTypes(inputNFTTypes);
+    function addTypes(InputType[] memory inputTypes) public onlyOwner {
+        _addTypes(inputTypes);
     }
 
-    function _addTypes(InputType[] memory inputNFTTypes) internal {
-        for (uint256 i = 0; i < inputNFTTypes.length; i++) {
+    function _addTypes(InputType[] memory inputTypes) internal {
+        for (uint256 i = 0; i < inputTypes.length; i++) {
             _addType(
-                inputNFTTypes[i].nftTypeId,
-                inputNFTTypes[i].limit,
-                inputNFTTypes[i].minAmt,
-                inputNFTTypes[i].ipfsHash,
-                inputNFTTypes[i].streaming
+                inputTypes[i].nftTypeId,
+                inputTypes[i].limit,
+                inputTypes[i].minAmt,
+                inputTypes[i].ipfsHash,
+                inputTypes[i].streaming
             );
         }
     }
@@ -168,7 +168,7 @@ contract FundingNFT is ERC721, Ownable {
         nftTypes[newTypeId].limit = limit;
         nftTypes[newTypeId].ipfsHash = ipfsHash;
         nftTypes[newTypeId].streaming = streaming_;
-        emit NewNFTType(newTypeId, limit, minAmt, streaming_);
+        emit NewType(newTypeId, limit, minAmt, streaming_);
     }
 
     function createTokenId(uint128 id, uint128 nftType) public pure returns (uint256 tokenId) {
@@ -361,7 +361,7 @@ contract FundingNFT is ERC721, Ownable {
 
     function activeUntil(uint256 tokenId) public view returns (uint128) {
         require(_exists(tokenId), "nonexistent-token");
-        NFTType storage nftType = nftTypes[tokenType(tokenId)];
+        Type storage nftType = nftTypes[tokenType(tokenId)];
         if (nftType.streaming == false || nftType.minAmt == 0) {
             return type(uint128).max;
         }

@@ -35,14 +35,14 @@ contract RadicleRegistry {
         string calldata symbol,
         address projectOwner,
         string calldata contractURI,
-        InputType[] calldata inputNFTTypes,
+        InputType[] calldata inputTypes,
         DripsReceiver[] memory drips
     ) public returns (FundingNFT) {
         bytes32 salt = bytes32(nextId++);
         FundingNFT fundingNFT = FundingNFT(
             Clones.cloneDeterministic(address(fundingNFTTemplate), salt)
         );
-        fundingNFT.init(name, symbol, projectOwner, contractURI, inputNFTTypes, builder, drips);
+        fundingNFT.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
         emit NewProject(fundingNFT, projectOwner, name);
         return fundingNFT;
     }
