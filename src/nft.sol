@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {Receiver} from "../lib/radicle-streaming/src/Pool.sol";
+import {DripsReceiver, Receiver} from "../lib/radicle-streaming/src/Pool.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
 import {IBuilder} from "./builder.sol";
@@ -16,11 +16,6 @@ struct InputNFTType {
     uint128 minAmt;
     bool streaming;
     string ipfsHash;
-}
-
-struct DripInput {
-    uint32 dripFraction;
-    Receiver[] dripReceiver;
 }
 
 contract FundingNFT is ERC721, Ownable {
@@ -69,7 +64,7 @@ contract FundingNFT is ERC721, Ownable {
 
     event NewContractURI(string contractURI);
     event NewBuilder(IBuilder builder);
-    event DripsUpdated(uint32 dripFraction, Receiver[] drips);
+    event DripsUpdated(DripsReceiver[] drips);
 
     constructor(DaiPool pool_) ERC721("", "") {
         deployer = msg.sender;
@@ -89,7 +84,7 @@ contract FundingNFT is ERC721, Ownable {
         string calldata contractURI_,
         InputNFTType[] memory inputNFTTypes,
         IBuilder builder_,
-        DripInput memory drips
+        DripsReceiver[] memory drips
     ) public {
         require(!initialized, "already-initialized");
         initialized = true;
@@ -101,8 +96,8 @@ contract FundingNFT is ERC721, Ownable {
         _addTypes(inputNFTTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
-        if (drips.dripFraction > 0) {
-            _changeDripReceiver(drips.dripFraction, new Receiver[](0), drips.dripReceiver);
+        if (drips.length > 0) {
+            _changeDripReceiver(new DripsReceiver[](0), drips);
         }
         dai.approve(address(pool), type(uint256).max);
     }
@@ -254,7 +249,7 @@ contract FundingNFT is ERC721, Ownable {
         emit NewStreamingNFT(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
-    function collect(Receiver[] calldata currDrips)
+    function collect(DripsReceiver[] calldata currDrips)
         public
         onlyOwner
         returns (uint128 collected, uint128 dripped)
@@ -264,7 +259,7 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(owner(), collected);
     }
 
-    function collectable(Receiver[] calldata currDrips)
+    function collectable(DripsReceiver[] calldata currDrips)
         public
         view
         returns (uint128 toCollect, uint128 toDrip)
@@ -307,21 +302,18 @@ contract FundingNFT is ERC721, Ownable {
         dai.transfer(msg.sender, withdrawn);
     }
 
-    function changeDripReceiver(
-        uint32 dripFraction,
-        Receiver[] memory currDrips,
-        Receiver[] memory newDrips
-    ) public onlyOwner {
-        _changeDripReceiver(dripFraction, currDrips, newDrips);
+    function changeDripReceiver(DripsReceiver[] memory currDrips, DripsReceiver[] memory newDrips)
+        public
+        onlyOwner
+    {
+        _changeDripReceiver(currDrips, newDrips);
     }
 
-    function _changeDripReceiver(
-        uint32 dripFraction,
-        Receiver[] memory currDrips,
-        Receiver[] memory newDrips
-    ) internal {
-        pool.updateSender(0, 0, dripFraction, currDrips, newDrips);
-        emit DripsUpdated(dripFraction, newDrips);
+    function _changeDripReceiver(DripsReceiver[] memory currDrips, DripsReceiver[] memory newDrips)
+        internal
+    {
+        pool.setDripsReceivers(currDrips, newDrips);
+        emit DripsUpdated(newDrips);
     }
 
     function withdrawable(uint256 tokenId) public view returns (uint128) {

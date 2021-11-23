@@ -28,8 +28,12 @@ contract NFTRegistryTest is BaseTest {
 
     uint64 public constant DEFAULT_NFT_TYPE = 0;
 
-    function noDrips() public pure returns (Receiver[] memory) {
-        return new Receiver[](0);
+    function noDrips() public pure returns (DripsReceiver[] memory) {
+        return new DripsReceiver[](0);
+    }
+
+    function dripPercent(uint32 percent) public view returns (uint32 weight) {
+        return (pool.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
     }
 
     function addStreamingNFTType(
@@ -74,7 +78,7 @@ contract NFTRegistryTest is BaseTest {
             "ipfsHash",
             new InputNFTType[](0),
             builder,
-            DripInput({dripFraction: 0, dripReceiver: noDrips()})
+            noDrips()
         );
         addStreamingNFTType(nftRegistry, DEFAULT_NFT_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
@@ -458,7 +462,7 @@ contract NFTRegistryTest is BaseTest {
 
     function testDrip() public {
         FundingNFT projectB = new FundingNFT(pool);
-        address arbitraryDripReceiver = address(0x123);
+        address arbitraryDripReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
             "B",
@@ -466,22 +470,16 @@ contract NFTRegistryTest is BaseTest {
             "ipfsHash",
             new InputNFTType[](0),
             builder,
-            DripInput({dripFraction: 0, dripReceiver: noDrips()})
+            noDrips()
         );
 
         //supporter starts to support default project
         mint(defaultMinAmtPerSec, 30 ether);
 
-        // default project decides 40% should go to drips
-        uint32 shouldDripFraction = uint32((pool.MAX_DRIPS_FRACTION() / 10) * 4);
+        DripsReceiver[] memory drips = new DripsReceiver[](1);
+        drips[0] = DripsReceiver(address(projectB), dripPercent(40));
+        nftRegistry.changeDripReceiver(noDrips(), drips);
 
-        // first drips should only go to project B
-        Receiver[] memory drips = new Receiver[](1);
-        drips[0] = Receiver(address(projectB), 1);
-        nftRegistry.changeDripReceiver(shouldDripFraction, noDrips(), drips);
-
-        uint32 dripFraction = pool.getDripsFraction(address(nftRegistry));
-        assertEq(dripFraction, shouldDripFraction, "incorrect-drip-fraction");
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         (uint128 amtProjectA, uint128 dripped) = nftRegistry.collect(drips);
@@ -498,17 +496,11 @@ contract NFTRegistryTest is BaseTest {
         );
         assertEq(amtProjectB, dripped, "project B didn't receive all drips");
 
-        // default project change drips: project B (80%) and arbitraryDripReceiver (20%)
-        // dripFraction to 50%
-        Receiver[] memory newDrips = new Receiver[](2);
-        newDrips[0] = Receiver(address(projectB), 4);
-        newDrips[1] = Receiver(arbitraryDripReceiver, 1);
-        if (address(projectB) > arbitraryDripReceiver) {
-            (newDrips[0], newDrips[1]) = (newDrips[1], newDrips[0]);
-        }
+        DripsReceiver[] memory newDrips = new DripsReceiver[](2);
+        newDrips[0] = DripsReceiver(address(projectB), dripPercent(40));
+        newDrips[1] = DripsReceiver(arbitraryDripReceiver, dripPercent(10));
 
-        shouldDripFraction = uint32((pool.MAX_DRIPS_FRACTION() / 10) * 5);
-        nftRegistry.changeDripReceiver(shouldDripFraction, drips, newDrips);
+        nftRegistry.changeDripReceiver(drips, newDrips);
 
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);
@@ -546,12 +538,9 @@ contract NFTRegistryTest is BaseTest {
         uint64 limit = 1;
         addStreamingNFTType(projectB, typeId, limit, defaultMinAmtPerSec);
 
-        // default project decides 40% should go to drips
-        uint32 dripFraction = uint32((pool.MAX_DRIPS_FRACTION() / 10) * 4);
-
         // drip to alice
-        Receiver[] memory drips = new Receiver[](1);
-        drips[0] = Receiver(alice, 1);
+        DripsReceiver[] memory drips = new DripsReceiver[](1);
+        drips[0] = DripsReceiver(alice, dripPercent(40));
 
         // init projcect with drips
         projectB.init(
@@ -561,7 +550,7 @@ contract NFTRegistryTest is BaseTest {
             "ipfsHash",
             new InputNFTType[](0),
             builder,
-            DripInput({dripFraction: dripFraction, dripReceiver: drips})
+            drips
         );
 
         uint128 amtTopUp = 30 ether;
