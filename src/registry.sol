@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsReceiver, DripsToken, InputType} from "./token.sol";
-import {DaiDripsHub} from "../lib/radicle-streaming/src/DaiDripsHub.sol";
+import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
+import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder.sol";
 
@@ -36,13 +36,13 @@ contract RadicleRegistry {
         address projectOwner,
         string calldata contractURI,
         InputType[] calldata inputTypes,
-        DripsReceiver[] memory drips
+        SplitsReceiver[] memory splits
     ) public returns (DripsToken) {
         bytes32 salt = bytes32(nextId++);
         DripsToken fundingToken = DripsToken(
             Clones.cloneDeterministic(address(dripTokenTemplate), salt)
         );
-        fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, drips);
+        fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, splits);
         emit NewProject(fundingToken, projectOwner, name);
         return fundingToken;
     }

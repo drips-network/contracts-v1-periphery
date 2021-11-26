@@ -3,10 +3,10 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import {RadicleRegistry} from "./../registry.sol";
-import {DaiDripsHub} from "../../lib/radicle-streaming/src/DaiDripsHub.sol";
-import {DripsReceiver, DripsToken, InputType} from "./../token.sol";
+import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
+import {DripsToken, InputType, SplitsReceiver} from "./../token.sol";
 import {Hevm} from "./hevm.t.sol";
-import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
+import {Dai} from "drips-hub/test/TestDai.sol";
 import {Builder} from "./../builder.sol";
 
 contract RegistryTest is DSTest {
@@ -54,7 +54,7 @@ contract RegistryTest is DSTest {
             address(this),
             ipfsHash,
             nftTypes,
-            new DripsReceiver[](0)
+            new SplitsReceiver[](0)
         );
         assertEq(nftRegistry.owner(), address(this));
         assertEq(nftRegistry.name(), name);

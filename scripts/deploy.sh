@@ -62,7 +62,7 @@ cat $DEPLOYMENT_FILE
 
 message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
-  dapp verify-contract --async 'lib/radicle-streaming/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB $CYCLE_SECS $DAI
+  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB $CYCLE_SECS $DAI
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $DRIPS_HUB $BUILDER $GOVERNANCE
   dapp verify-contract --async 'src/builder.sol:Builder' $BUILDER
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
@@ -70,5 +70,3 @@ if [ -n "$ETHERSCAN_API_KEY" ]; then
 else
     echo "No ETHERSCAN_API_KEY for contract verification provided"
 fi
-
-

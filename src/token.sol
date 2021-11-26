@@ -3,11 +3,9 @@ pragma solidity ^0.8.7;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {DripsReceiver, Receiver} from "../lib/radicle-streaming/src/DripsHub.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
-
+import {DaiDripsHub, DripsReceiver, IDai, SplitsReceiver} from "drips-hub/DaiDripsHub.sol";
 import {IBuilder} from "./builder.sol";
-import {DaiDripsHub, IDai} from "../lib/radicle-streaming/src/DaiDripsHub.sol";
 
 struct InputType {
     uint128 nftTypeId;
@@ -67,7 +65,7 @@ contract DripsToken is ERC721, Ownable {
 
     event NewContractURI(string contractURI);
     event NewBuilder(IBuilder builder);
-    event DripsUpdated(DripsReceiver[] drips);
+    event SplitsUpdated(SplitsReceiver[] splits);
 
     constructor(DaiDripsHub hub_) ERC721("", "") {
         deployer = msg.sender;
@@ -88,7 +86,7 @@ contract DripsToken is ERC721, Ownable {
         string calldata contractURI_,
         InputType[] memory inputTypes,
         IBuilder builder_,
-        DripsReceiver[] memory drips
+        SplitsReceiver[] memory splits
     ) public {
         require(!initialized, "already-initialized");
         initialized = true;
@@ -100,8 +98,8 @@ contract DripsToken is ERC721, Ownable {
         _addTypes(inputTypes);
         _changeContractURI(contractURI_);
         _transferOwnership(owner);
-        if (drips.length > 0) {
-            _changeDripReceiver(new DripsReceiver[](0), drips);
+        if (splits.length > 0) {
+            _changeSplitsReceivers(new SplitsReceiver[](0), splits);
         }
         dai.approve(address(hub), type(uint256).max);
     }
@@ -247,29 +245,29 @@ contract DripsToken is ERC721, Ownable {
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
         // start streaming
-        hub.updateSender(newTokenId, 0, 0, _receivers(0), int128(topUpAmt), _receivers(amtPerSec));
+        hub.setDrips(newTokenId, 0, 0, _receivers(0), int128(topUpAmt), _receivers(amtPerSec));
         nfts[newTokenId].amt = amtPerSec;
         nfts[newTokenId].lastUpdate = uint64(block.timestamp);
         nfts[newTokenId].lastBalance = topUpAmt;
         emit NewStreamingToken(newTokenId, nftReceiver, typeId, topUpAmt, amtPerSec);
     }
 
-    function collect(DripsReceiver[] calldata currDrips)
+    function collect(SplitsReceiver[] calldata currSplits)
         public
         onlyOwner
-        returns (uint128 collected, uint128 dripped)
+        returns (uint128 collected, uint128 split)
     {
-        (, dripped) = hub.collect(address(this), currDrips);
+        (, split) = hub.collect(address(this), currSplits);
         collected = uint128(dai.balanceOf(address(this)));
         dai.transfer(owner(), collected);
     }
 
-    function collectable(DripsReceiver[] calldata currDrips)
+    function collectable(SplitsReceiver[] calldata currSplits)
         public
         view
-        returns (uint128 toCollect, uint128 toDrip)
+        returns (uint128 toCollect, uint128 toSplit)
     {
-        (toCollect, toDrip) = hub.collectable(address(this), currDrips);
+        (toCollect, toSplit) = hub.collectable(address(this), currSplits);
         toCollect += uint128(dai.balanceOf(address(this)));
     }
 
@@ -289,8 +287,8 @@ contract DripsToken is ERC721, Ownable {
     function topUp(uint256 tokenId, uint128 topUpAmt) public onlyTokenHolder(tokenId) {
         require(nftTypes[tokenType(tokenId)].streaming, "not-a-streaming-nft");
         dai.transferFrom(msg.sender, address(this), topUpAmt);
-        Receiver[] memory receivers = _tokenReceivers(tokenId);
-        (uint128 newBalance, ) = hub.updateSender(
+        DripsReceiver[] memory receivers = _tokenReceivers(tokenId);
+        (uint128 newBalance, ) = hub.setDrips(
             tokenId,
             nfts[tokenId].lastUpdate,
             nfts[tokenId].lastBalance,
@@ -311,8 +309,8 @@ contract DripsToken is ERC721, Ownable {
         if (withdrawAmt > withdrawableAmt) {
             withdrawAmt = withdrawableAmt;
         }
-        Receiver[] memory receivers = _tokenReceivers(tokenId);
-        (uint128 newBalance, int128 realBalanceDelta) = hub.updateSender(
+        DripsReceiver[] memory receivers = _tokenReceivers(tokenId);
+        (uint128 newBalance, int128 realBalanceDelta) = hub.setDrips(
             tokenId,
             nfts[tokenId].lastUpdate,
             nfts[tokenId].lastBalance,
@@ -326,18 +324,19 @@ contract DripsToken is ERC721, Ownable {
         dai.transfer(msg.sender, withdrawn);
     }
 
-    function changeDripReceiver(DripsReceiver[] memory currDrips, DripsReceiver[] memory newDrips)
-        public
-        onlyOwner
-    {
-        _changeDripReceiver(currDrips, newDrips);
+    function changeSplitsReceivers(
+        SplitsReceiver[] memory currSplits,
+        SplitsReceiver[] memory newSplits
+    ) public onlyOwner {
+        _changeSplitsReceivers(currSplits, newSplits);
     }
 
-    function _changeDripReceiver(DripsReceiver[] memory currDrips, DripsReceiver[] memory newDrips)
-        internal
-    {
-        hub.setDripsReceivers(currDrips, newDrips);
-        emit DripsUpdated(newDrips);
+    function _changeSplitsReceivers(
+        SplitsReceiver[] memory currSplits,
+        SplitsReceiver[] memory newSplits
+    ) internal {
+        hub.setSplits(currSplits, newSplits);
+        emit SplitsUpdated(newSplits);
     }
 
     function withdrawable(uint256 tokenId) public view returns (uint128) {
@@ -423,13 +422,21 @@ contract DripsToken is ERC721, Ownable {
         return 0;
     }
 
-    function _tokenReceivers(uint256 tokenId) internal view returns (Receiver[] memory receivers) {
+    function _tokenReceivers(uint256 tokenId)
+        internal
+        view
+        returns (DripsReceiver[] memory receivers)
+    {
         return _receivers(nfts[tokenId].amt);
     }
 
-    function _receivers(uint128 amtPerSec) internal view returns (Receiver[] memory receivers) {
-        if (amtPerSec == 0) return new Receiver[](0);
-        receivers = new Receiver[](1);
-        receivers[0] = Receiver(address(this), amtPerSec);
+    function _receivers(uint128 amtPerSec)
+        internal
+        view
+        returns (DripsReceiver[] memory receivers)
+    {
+        if (amtPerSec == 0) return new DripsReceiver[](0);
+        receivers = new DripsReceiver[](1);
+        receivers[0] = DripsReceiver(address(this), amtPerSec);
     }
 }

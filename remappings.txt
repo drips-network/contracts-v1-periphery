@@ -1,2 +1,3 @@
 ds-test/=lib/ds-test/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+drips-hub/=lib/radicle-drips-hub/src/

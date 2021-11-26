@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
 import "./../token.sol";
-import {Dai} from "../../lib/radicle-streaming/src/test/TestDai.sol";
+import {Dai} from "drips-hub/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Hevm} from "./hevm.t.sol";
 import {Builder} from "../builder.sol";
@@ -30,12 +30,12 @@ contract TokenRegistryTest is DSTest {
 
     uint64 public constant DEFAULT_TOKEN_TYPE = 0;
 
-    function noDrips() public pure returns (DripsReceiver[] memory) {
-        return new DripsReceiver[](0);
+    function noSplits() public pure returns (SplitsReceiver[] memory) {
+        return new SplitsReceiver[](0);
     }
 
-    function dripPercent(uint32 percent) public view returns (uint32 weight) {
-        return (hub.TOTAL_DRIPS_WEIGHTS() * percent) / 100;
+    function splitPercent(uint32 percent) public view returns (uint32 weight) {
+        return (hub.TOTAL_SPLITS_WEIGHT() * percent) / 100;
     }
 
     function addStreamingType(
@@ -80,7 +80,7 @@ contract TokenRegistryTest is DSTest {
             "ipfsHash",
             new InputType[](0),
             builder,
-            noDrips()
+            noSplits()
         );
         addStreamingType(nftRegistry, DEFAULT_TOKEN_TYPE, uint64(100), defaultMinAmtPerSec);
         nftRegistry_ = address(nftRegistry);
@@ -107,8 +107,8 @@ contract TokenRegistryTest is DSTest {
 
         uint128 preBalance = uint128(dai.balanceOf(address(this)));
         uint128 expectedCollected = defaultMinAmtPerSec * CYCLE_SECS;
-        (uint128 collectable, ) = nftRegistry.collectable(noDrips());
-        nftRegistry.collect(noDrips());
+        (uint128 collectable, ) = nftRegistry.collectable(noSplits());
+        nftRegistry.collect(noSplits());
         assertEq(collectable, expectedCollected, "collectable-invalid");
         assertEq(dai.balanceOf(address(this)), preBalance + expectedCollected, "collect-failed");
         assertEq(
@@ -472,9 +472,9 @@ contract TokenRegistryTest is DSTest {
         }
     }
 
-    function testDrip() public {
+    function testSplits() public {
         DripsToken projectB = new DripsToken(hub);
-        address arbitraryDripReceiver = address(uint160(address(projectB)) + 1);
+        address arbitrarySplitsReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
             "B",
@@ -482,67 +482,67 @@ contract TokenRegistryTest is DSTest {
             "ipfsHash",
             new InputType[](0),
             builder,
-            noDrips()
+            noSplits()
         );
 
         //supporter starts to support default project
         mint(defaultMinAmtPerSec, 30 ether);
 
-        DripsReceiver[] memory drips = new DripsReceiver[](1);
-        drips[0] = DripsReceiver(address(projectB), dripPercent(40));
-        nftRegistry.changeDripReceiver(noDrips(), drips);
+        SplitsReceiver[] memory splits = new SplitsReceiver[](1);
+        splits[0] = SplitsReceiver(address(projectB), splitPercent(40));
+        nftRegistry.changeSplitsReceivers(noSplits(), splits);
 
         hevm.warp(block.timestamp + CYCLE_SECS);
 
-        (uint128 amtProjectA, uint128 dripped) = nftRegistry.collect(drips);
+        (uint128 amtProjectA, uint128 split) = nftRegistry.collect(splits);
         assertEq(
             amtProjectA,
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 6,
-            "project A didn't receive drips"
+            "project A didn't receive splits"
         );
-        (uint128 amtProjectB, ) = projectB.collect(noDrips());
+        (uint128 amtProjectB, ) = projectB.collect(noSplits());
         assertEq(
             amtProjectB,
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 4,
-            "project B didn't receive drips"
+            "project B didn't receive splits"
         );
-        assertEq(amtProjectB, dripped, "project B didn't receive all drips");
+        assertEq(amtProjectB, split, "project B didn't receive all splits");
 
-        DripsReceiver[] memory newDrips = new DripsReceiver[](2);
-        newDrips[0] = DripsReceiver(address(projectB), dripPercent(40));
-        newDrips[1] = DripsReceiver(arbitraryDripReceiver, dripPercent(10));
+        SplitsReceiver[] memory newSplits = new SplitsReceiver[](2);
+        newSplits[0] = SplitsReceiver(address(projectB), splitPercent(40));
+        newSplits[1] = SplitsReceiver(arbitrarySplitsReceiver, splitPercent(10));
 
-        nftRegistry.changeDripReceiver(drips, newDrips);
+        nftRegistry.changeSplitsReceivers(splits, newSplits);
 
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);
 
         // default project gets 50%
-        (amtProjectA, ) = nftRegistry.collect(newDrips);
+        (amtProjectA, ) = nftRegistry.collect(newSplits);
         assertEq(
             amtProjectA,
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 5,
-            "project A didn't receive drips"
+            "project A didn't receive splits"
         );
 
         // projectB gets 30%
-        (amtProjectB, ) = projectB.collect(noDrips());
+        (amtProjectB, ) = projectB.collect(noSplits());
         assertEq(
             amtProjectB,
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 4,
-            "project B didn't receive drips"
+            "project B didn't receive splits"
         );
 
-        // arbitraryDripReceiver gets 10%
-        hub.collect(arbitraryDripReceiver, noDrips());
+        // arbitrarySplitsReceiver gets 10%
+        hub.collect(arbitrarySplitsReceiver, noSplits());
         assertEq(
-            dai.balanceOf(arbitraryDripReceiver),
+            dai.balanceOf(arbitrarySplitsReceiver),
             (CYCLE_SECS * defaultMinAmtPerSec) / 10,
-            "arbitraryDripReceiver didn't receive"
+            "arbitrarySplitsReceiver didn't receive"
         );
     }
 
-    function testDripWithInit() public {
+    function testSplitWithInit() public {
         address alice = address(0x123);
         DripsToken projectB = new DripsToken(hub);
 
@@ -550,11 +550,11 @@ contract TokenRegistryTest is DSTest {
         uint64 limit = 1;
         addStreamingType(projectB, typeId, limit, defaultMinAmtPerSec);
 
-        // drip to alice
-        DripsReceiver[] memory drips = new DripsReceiver[](1);
-        drips[0] = DripsReceiver(alice, dripPercent(40));
+        // split to alice
+        SplitsReceiver[] memory splits = new SplitsReceiver[](1);
+        splits[0] = SplitsReceiver(alice, splitPercent(40));
 
-        // init projcect with drips
+        // init projcect with splits
         projectB.init(
             "Project B",
             "B",
@@ -562,7 +562,7 @@ contract TokenRegistryTest is DSTest {
             "ipfsHash",
             new InputType[](0),
             builder,
-            drips
+            splits
         );
 
         uint128 amtTopUp = 30 ether;
@@ -572,13 +572,13 @@ contract TokenRegistryTest is DSTest {
         // next cycle
         hevm.warp(block.timestamp + CYCLE_SECS);
 
-        (uint128 amtProjectB, uint128 amtAlice) = projectB.collect(drips);
+        (uint128 amtProjectB, uint128 amtAlice) = projectB.collect(splits);
         assertEq(
             amtProjectB,
             ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 6,
-            "project A didn't receive drips"
+            "project A didn't receive splits"
         );
-        hub.collect(alice, noDrips());
+        hub.collect(alice, noSplits());
         assertEq(amtAlice, ((CYCLE_SECS * defaultMinAmtPerSec) / 10) * 4);
         assertEq(amtAlice, dai.balanceOf(alice), "incorrect-dai-amount");
     }
@@ -616,7 +616,7 @@ contract TokenRegistryTest is DSTest {
         uint64 limit = 1;
         uint128 giveAmt = 110 ether;
         setup1TimeSupport(minGiveAmt, limit, nftTypeId, giveAmt);
-        (uint128 collected, ) = nftRegistry.collect(noDrips());
+        (uint128 collected, ) = nftRegistry.collect(noSplits());
         assertEq(collected, giveAmt);
     }
 }
