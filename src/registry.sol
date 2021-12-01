@@ -12,6 +12,8 @@ contract RadicleRegistry {
 
     event NewProject(DripsToken indexed fundingToken, address indexed projectOwner, string name);
     event NewBuilder(IBuilder builder);
+    event NewGovernance(address indexed governance);
+
     modifier onlyGovernance() {
         require(msg.sender == governance, "only-governance");
         _;
@@ -26,6 +28,7 @@ contract RadicleRegistry {
         address governance_
     ) {
         governance = governance_;
+        emit NewGovernance(governance);
         changeBuilder(builder_);
         dripTokenTemplate = new DripsToken(hub_);
     }
@@ -58,5 +61,10 @@ contract RadicleRegistry {
     function changeBuilder(IBuilder newBuilder) public onlyGovernance {
         builder = newBuilder;
         emit NewBuilder(newBuilder);
+    }
+
+    function changeGoverance(address newGovernance) public onlyGovernance {
+        governance = newGovernance;
+        emit NewGovernance(newGovernance);
     }
 }

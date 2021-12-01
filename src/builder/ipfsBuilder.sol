@@ -6,10 +6,29 @@ import "./baseBuilder.sol";
 contract DefaultIPFSBuilder is BaseBuilder {
     address public governance;
     string public defaultIpfsHash;
+    event NewGovernance(address indexed governance);
+    event NewDefaultIPFS(string ipfsHash);
+
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "only-governance");
+        _;
+    }
 
     constructor(address governance_, string memory defaultIpfsHash_) {
         governance = governance_;
         defaultIpfsHash = defaultIpfsHash_;
+        emit NewDefaultIPFS(defaultIpfsHash);
+        emit NewGovernance(governance);
+    }
+
+    function changeGoverance(address newGovernance) public onlyGovernance {
+        governance = newGovernance;
+        emit NewGovernance(newGovernance);
+    }
+
+    function changeDefaultIPFS(string calldata newDefaultIpfsHash) public onlyGovernance {
+        defaultIpfsHash = newDefaultIpfsHash;
+        emit NewDefaultIPFS(defaultIpfsHash);
     }
 
     function buildMetaData(
