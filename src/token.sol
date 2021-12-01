@@ -5,7 +5,7 @@ import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 import {DaiDripsHub, DripsReceiver, IDai, SplitsReceiver} from "drips-hub/DaiDripsHub.sol";
-import {IBuilder} from "./builder/builder.sol";
+import {IBuilder} from "./builder/interface.sol";
 
 struct InputType {
     uint128 nftTypeId;

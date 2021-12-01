@@ -7,7 +7,7 @@ import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {DripsToken, InputType, SplitsReceiver} from "./../token.sol";
 import {Hevm} from "./hevm.t.sol";
 import {Dai} from "drips-hub/test/TestDai.sol";
-import {DefaultSVGBuilder} from "./../builder/builder.sol";
+import {DefaultSVGBuilder} from "./../builder/svgBuilder.sol";
 
 contract RegistryTest is DSTest {
     RadicleRegistry public radicleRegistry;

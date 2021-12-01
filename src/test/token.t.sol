@@ -6,7 +6,7 @@ import "./../token.sol";
 import {Dai} from "drips-hub/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Hevm} from "./hevm.t.sol";
-import {DefaultSVGBuilder} from "../builder/builder.sol";
+import {DefaultSVGBuilder} from "../builder/svgBuilder.sol";
 import "../../lib/ds-test/src/test.sol";
 
 contract TestDai is Dai {
