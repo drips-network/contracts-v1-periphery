@@ -7,11 +7,11 @@ import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {DripsToken, InputType, SplitsReceiver} from "./../token.sol";
 import {Hevm} from "./hevm.t.sol";
 import {Dai} from "drips-hub/test/TestDai.sol";
-import {Builder} from "./../builder.sol";
+import {DefaultSVGBuilder} from "./../builder/builder.sol";
 
 contract RegistryTest is DSTest {
     RadicleRegistry public radicleRegistry;
-    Builder public builder;
+    DefaultSVGBuilder public builder;
     DaiDripsHub public hub;
     Dai public dai;
     Hevm public hevm;
@@ -21,7 +21,7 @@ contract RegistryTest is DSTest {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
         hub = new DaiDripsHub(CYCLE_SECS, dai);
-        builder = new Builder();
+        builder = new DefaultSVGBuilder();
         radicleRegistry = new RadicleRegistry(hub, builder, address(this));
     }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import "../builder.sol";
 
-contract WrapperBuilder is Builder {
+contract WrapperBuilder is DefaultSVGBuilder {
     function toTwoDecimals(uint128 number) public pure returns (string memory numberString) {
         return _toTwoDecimals(number);
     }

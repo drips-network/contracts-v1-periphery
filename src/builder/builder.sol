@@ -1,32 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// solhint-disable quotes
-pragma solidity ^0.8.7;
+import "./base.sol";
 
-import "./base64.sol";
-import "openzeppelin-contracts/utils/Strings.sol";
-
-interface IBuilder {
-    function buildMetaData(
-        string memory projectName,
-        uint128 tokenId,
-        uint128 nftType,
-        bool streaming,
-        uint128 amtPerCycle,
-        bool active
-    ) external view returns (string memory);
-
-    function buildMetaData(
-        string memory projectName,
-        uint128 tokenId,
-        uint128 nftType,
-        bool streaming,
-        uint128 amtPerCycle,
-        bool active,
-        string memory ipfsHash
-    ) external view returns (string memory);
-}
-
-contract Builder is IBuilder {
+contract DefaultSVGBuilder is BaseBuilder {
     // temporary background for testing animations
     string public constant DEFAULT_BACKGROUND =
         '<g mask="url(&quot;#SvgjsMask1077&quot;)" fill="none">'
@@ -104,10 +79,6 @@ contract Builder is IBuilder {
             );
     }
 
-    function _toString(bool v) internal pure returns (string memory) {
-        return v ? "true" : "false";
-    }
-
     function _buildSVG(
         string memory projectName,
         string memory tokenId,
@@ -131,82 +102,4 @@ contract Builder is IBuilder {
             );
     }
 
-    function _buildJSONAttributes(
-        string memory tokenId,
-        string memory nftType,
-        string memory supportRate,
-        bool active,
-        bool streaming
-    ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    '"attributes": [ { "trait_type": "TokenId", "value": "',
-                    tokenId,
-                    '"},{ "trait_type": "Type", "value": "',
-                    nftType,
-                    '"},{ "trait_type": "Active", "value": "',
-                    active ? "true" : "false",
-                    '"},{ "trait_type": "Streaming Token", "value": "',
-                    streaming ? "true" : "false",
-                    '"},{ "trait_type": "SupportRate", "value": "',
-                    supportRate,
-                    ' DAI"}]'
-                )
-            );
-    }
-
-    function _buildJSON(
-        string memory projectName,
-        string memory tokenId,
-        string memory nftType,
-        string memory supportRate,
-        bool active,
-        bool streaming,
-        string memory imageObj
-    ) internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "data:application/json;base64,",
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{ "projectName":"',
-                                projectName,
-                                '", ',
-                                _buildJSONAttributes(
-                                    tokenId,
-                                    nftType,
-                                    supportRate,
-                                    active,
-                                    streaming
-                                ),
-                                ', "image": "',
-                                imageObj,
-                                '" }'
-                            )
-                        )
-                    )
-                )
-            );
-    }
-
-    function _toTwoDecimals(uint128 number) internal pure returns (string memory numberString) {
-        // decimal after the first two decimals are rounded up or down
-        number += 0.005 * 10**18;
-        numberString = Strings.toString(number / 1 ether);
-        uint128 twoDecimals = (number % 1 ether) / 10**16;
-        if (twoDecimals > 0) {
-            numberString = string(
-                abi.encodePacked(
-                    numberString,
-                    ".",
-                    twoDecimals < 10 ? "0" : "",
-                    Strings.toString(twoDecimals)
-                )
-            );
-        }
-        return numberString;
-    }
 }

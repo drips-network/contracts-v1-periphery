@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
 import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
-import {IBuilder} from "./builder.sol";
+import {IBuilder} from "./builder/base.sol";
 
 contract RadicleRegistry {
     address public governance;
