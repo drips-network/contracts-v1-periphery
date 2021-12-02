@@ -5,7 +5,7 @@ import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
 import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder/interface.sol";
-import {Ownable } from "openzeppelin-contracts/access/Ownable.sol";
+import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
 contract RadicleRegistry is Ownable {
     address public governance;
@@ -20,9 +20,9 @@ contract RadicleRegistry is Ownable {
     constructor(
         DaiDripsHub hub_,
         IBuilder builder_,
-        address governance_
+        address owner_
     ) {
-        _transferOwnership(governance_);
+        _transferOwnership(owner_);
         changeBuilder(builder_);
         dripTokenTemplate = new DripsToken(hub_);
     }
