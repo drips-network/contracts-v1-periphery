@@ -68,7 +68,7 @@ contract TokenRegistryTest is DSTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new TestDai();
-        hub = new DaiDripsHub(CYCLE_SECS, dai);
+        hub = new DaiDripsHub(CYCLE_SECS, address(this), dai);
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new DripsToken(hub);
         // testing addStreamingType function

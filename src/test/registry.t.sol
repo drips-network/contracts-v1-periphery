@@ -20,7 +20,7 @@ contract RegistryTest is DSTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
-        hub = new DaiDripsHub(CYCLE_SECS, dai);
+        hub = new DaiDripsHub(CYCLE_SECS, address(this), dai);
         builder = new DefaultSVGBuilder();
         radicleRegistry = new RadicleRegistry(hub, builder, address(this));
     }
