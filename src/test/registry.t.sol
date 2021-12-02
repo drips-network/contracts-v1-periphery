@@ -82,9 +82,9 @@ contract RegistryTest is DSTest {
     }
 
     function testChangeGovernance() public {
-        assertEq(radicleRegistry.governance(), address(this));
-        radicleRegistry.changeGoverance(address(0xa));
-        assertEq(radicleRegistry.governance(), address(0xa));
+        assertEq(radicleRegistry.owner(), address(this));
+        radicleRegistry.transferOwnership(address(0xa));
+        assertEq(radicleRegistry.owner(), address(0xa));
     }
 
     function testChangeBuilder() public {

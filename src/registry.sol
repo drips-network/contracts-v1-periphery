@@ -5,19 +5,14 @@ import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
 import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder/interface.sol";
+import {Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 
-contract RadicleRegistry {
+contract RadicleRegistry is Ownable {
     address public governance;
     IBuilder public builder;
 
     event NewProject(DripsToken indexed fundingToken, address indexed projectOwner, string name);
     event NewBuilder(IBuilder builder);
-    event NewGovernance(address indexed governance);
-
-    modifier onlyGovernance() {
-        require(msg.sender == governance, "only-governance");
-        _;
-    }
 
     DripsToken public immutable dripTokenTemplate;
     uint256 public nextId;
@@ -27,8 +22,7 @@ contract RadicleRegistry {
         IBuilder builder_,
         address governance_
     ) {
-        governance = governance_;
-        emit NewGovernance(governance);
+        _transferOwnership(governance_);
         changeBuilder(builder_);
         dripTokenTemplate = new DripsToken(hub_);
     }
@@ -58,13 +52,8 @@ contract RadicleRegistry {
             DripsToken(Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id)));
     }
 
-    function changeBuilder(IBuilder newBuilder) public onlyGovernance {
+    function changeBuilder(IBuilder newBuilder) public onlyOwner {
         builder = newBuilder;
         emit NewBuilder(newBuilder);
-    }
-
-    function changeGoverance(address newGovernance) public onlyGovernance {
-        governance = newGovernance;
-        emit NewGovernance(newGovernance);
     }
 }
