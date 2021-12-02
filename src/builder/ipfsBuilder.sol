@@ -2,14 +2,22 @@
 // solhint-disable quotes
 pragma solidity ^0.8.7;
 import "./baseBuilder.sol";
+import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
-contract DefaultIPFSBuilder is BaseBuilder {
+contract DefaultIPFSBuilder is BaseBuilder, Ownable {
     address public governance;
     string public defaultIpfsHash;
+    event NewDefaultIPFS(string ipfsHash);
 
-    constructor(address governance_, string memory defaultIpfsHash_) {
-        governance = governance_;
+    constructor(address owner_, string memory defaultIpfsHash_) {
+        _transferOwnership(owner_);
         defaultIpfsHash = defaultIpfsHash_;
+        emit NewDefaultIPFS(defaultIpfsHash);
+    }
+
+    function changeDefaultIPFS(string calldata newDefaultIpfsHash) public onlyOwner {
+        defaultIpfsHash = newDefaultIpfsHash;
+        emit NewDefaultIPFS(defaultIpfsHash);
     }
 
     function buildMetaData(

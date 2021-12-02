@@ -80,4 +80,17 @@ contract RegistryTest is DSTest {
         assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
         assertEq(address(radicleRegistry.projectAddr(1)), address(0));
     }
+
+    function testChangeGovernance() public {
+        assertEq(radicleRegistry.owner(), address(this));
+        radicleRegistry.transferOwnership(address(0xa));
+        assertEq(radicleRegistry.owner(), address(0xa));
+    }
+
+    function testChangeBuilder() public {
+        assertEq(address(radicleRegistry.builder()), address(builder));
+        DefaultSVGBuilder newBuilder = new DefaultSVGBuilder();
+        radicleRegistry.changeBuilder(newBuilder);
+        assertEq(address(radicleRegistry.builder()), address(newBuilder));
+    }
 }

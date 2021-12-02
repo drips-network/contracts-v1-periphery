@@ -48,6 +48,13 @@ contract IPFSBuilder is DSTest {
 
     function setUp() public {
         builder = new DefaultIPFSBuilder(address(this), "hash");
+        assertEq(builder.defaultIpfsHash(), string("hash"));
+        assertEq(builder.owner(), address(this));
+    }
+
+    function testChangeGovernance() public {
+        builder.transferOwnership(address(0xa));
+        assertEq(builder.owner(), address(0xa));
     }
 
     function testSVGJSON() public view {
