@@ -2,9 +2,10 @@
 pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
-import "../builder.sol";
+import "../svgBuilder.sol";
+import "../ipfsBuilder.sol";
 
-contract WrapperBuilder is Builder {
+contract WrapperBuilder is DefaultSVGBuilder {
     function toTwoDecimals(uint128 number) public pure returns (string memory numberString) {
         return _toTwoDecimals(number);
     }
@@ -31,6 +32,22 @@ contract BuilderTest is DSTest {
         // round down
         assertEq(builder.toTwoDecimals(12.014 * 10**18), "12.01", "incorrect-number-string");
         assertEq(builder.toTwoDecimals(12.0149 * 10**18), "12.01", "incorrect-number-string");
+    }
+
+    function testSVGJSON() public view {
+        builder.buildMetaData("Test", 1, 2, true, 5 ether, true);
+    }
+
+    function testIPFSJSON() public view {
+        builder.buildMetaData("Test", 1, 2, true, 5 ether, true, "ipfsHash");
+    }
+}
+
+contract IPFSBuilder is DSTest {
+    DefaultIPFSBuilder public builder;
+
+    function setUp() public {
+        builder = new DefaultIPFSBuilder(address(this), "hash");
     }
 
     function testSVGJSON() public view {

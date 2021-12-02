@@ -6,7 +6,7 @@ import "./../token.sol";
 import {Dai} from "drips-hub/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Hevm} from "./hevm.t.sol";
-import {Builder} from "../builder.sol";
+import {DefaultSVGBuilder} from "../builder/svgBuilder.sol";
 import "../../lib/ds-test/src/test.sol";
 
 contract TestDai is Dai {
@@ -20,7 +20,7 @@ contract TokenRegistryTest is DSTest {
     address public nftRegistry_;
     DaiDripsHub public hub;
     TestDai public dai;
-    Builder public builder;
+    DefaultSVGBuilder public builder;
     Hevm public hevm;
 
     uint256 public constant ONE_TRILLION_DAI = (1 ether * 10**12);
@@ -72,7 +72,7 @@ contract TokenRegistryTest is DSTest {
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new DripsToken(hub);
         // testing addStreamingType function
-        builder = new Builder();
+        builder = new DefaultSVGBuilder();
         nftRegistry.init(
             "Dummy Project",
             "DP",
