@@ -211,7 +211,7 @@ contract DripsToken is ERC721, Ownable {
         uint128 typeId,
         uint128 giveAmt
     ) public returns (uint256 newTokenId) {
-        require(giveAmt > nftTypes[typeId].minAmt, "giveAmt-too-low");
+        require(giveAmt >= nftTypes[typeId].minAmt, "giveAmt-too-low");
         require(nftTypes[typeId].streaming == false, "type-is-streaming");
         newTokenId = _mintInternal(nftReceiver, typeId, giveAmt);
         // one time give instead of streaming

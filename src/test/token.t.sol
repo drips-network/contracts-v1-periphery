@@ -619,4 +619,14 @@ contract TokenRegistryTest is DSTest {
         (uint128 collected, ) = nftRegistry.collect(noSplits());
         assertEq(collected, giveAmt);
     }
+
+    function testOneTimeMinGive() public {
+        uint128 minGiveAmt = 100 ether;
+        uint128 nftTypeId = 2;
+        uint64 limit = 1;
+        uint128 giveAmt = 100 ether;
+        setup1TimeSupport(minGiveAmt, limit, nftTypeId, giveAmt);
+        (uint128 collected, ) = nftRegistry.collect(noSplits());
+        assertEq(collected, giveAmt);
+    }
 }
