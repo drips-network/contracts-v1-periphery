@@ -48,7 +48,13 @@ contract DripsToken is ERC721, Ownable {
     mapping(uint256 => Token) public nfts;
 
     // events
-    event NewType(uint128 indexed nftType, uint64 limit, uint128 minAmt, bool streaming, string ipfsHash);
+    event NewType(
+        uint128 indexed nftType,
+        uint64 limit,
+        uint128 minAmt,
+        bool streaming,
+        string ipfsHash
+    );
     event NewStreamingToken(
         uint256 indexed tokenId,
         address indexed receiver,
