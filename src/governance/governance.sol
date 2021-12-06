@@ -63,7 +63,7 @@ contract Governance is Ownable {
         uint256 earliestExeTime
     ) public {
         bytes32 hash_ = hash(spell, sig, earliestExeTime);
-        require(scheduler[hash_], "unknown_spell");
+        require(scheduler[hash_], "unknown-spell");
         require(block.timestamp >= earliestExeTime, "execution-too-early");
 
         executor.exec(spell, sig);

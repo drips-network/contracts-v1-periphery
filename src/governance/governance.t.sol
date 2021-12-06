@@ -4,6 +4,7 @@ pragma solidity ^0.8.7;
 import "ds-test/test.sol";
 import {Governance} from "./governance.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
+import {Hevm} from "../test/hevm.t.sol";
 
 // contract should be maintained by governance
 contract DripsContract is Ownable {
@@ -61,10 +62,12 @@ contract ChangeValueSpell {
 contract GovernanceTest is DSTest {
     Governance public governance;
     DripsContract public dripsContract;
+    Hevm public hevm;
 
     function setUp() public {
         governance = new Governance(address(this));
         dripsContract = new DripsContract(address(governance.executor()));
+        hevm = Hevm(HEVM_ADDRESS);
     }
 
     function assertPreCondition() public {
@@ -89,6 +92,40 @@ contract GovernanceTest is DSTest {
         address action = address(new ChangeValueSpellAction());
         governance.schedule(action, sig, block.timestamp);
         assertPreCondition();
+        governance.execute(action, sig, block.timestamp);
+        assertPostCondition();
+    }
+
+    function testSpellScheduleWithoutApproval() public {
+        ChangeValueSpell spell = new ChangeValueSpell(governance, address(dripsContract), 0);
+        try spell.schedule() {
+            assertTrue(false, "schedule-schould-revert");
+        } catch Error(string memory reason) {
+            assertEq(reason, "spell-not-approved", "Invalid revert reason");
+        }
+    }
+
+    function testExecuteWithoutSchedule() public {
+        bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
+        address action = address(new ChangeValueSpellAction());
+        try governance.execute(action, sig, block.timestamp) {
+            assertTrue(false, "execute-schould-revert");
+        } catch Error(string memory reason) {
+            assertEq(reason, "unknown-spell", "Invalid revert reason");
+        }
+    }
+
+    function testTimeDelay() public {
+        bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
+        address action = address(new ChangeValueSpellAction());
+        governance.schedule(action, sig, block.timestamp + 1 days);
+        assertPreCondition();
+        try governance.execute(action, sig, block.timestamp) {
+            assertTrue(false, "execution-too-early");
+        } catch Error(string memory reason) {
+            assertEq(reason, "unknown-spell", "Invalid revert reason");
+        }
+        hevm.warp(block.timestamp + 1 days);
         governance.execute(action, sig, block.timestamp);
         assertPostCondition();
     }
