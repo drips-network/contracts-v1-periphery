@@ -3,7 +3,7 @@
 pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
-import {Governance} from "./governance.sol";
+import {Governance, Executor} from "./governance.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {Hevm} from "../test/hevm.t.sol";
 
@@ -25,6 +25,18 @@ contract DripsContract is Ownable {
 contract ChangeValueSpellAction {
     function execute(DripsContract dripsContract) public {
         dripsContract.setValue(1);
+    }
+}
+
+contract GovernanceDelaySpellAction {
+    // storage of executor
+    // immutable variables like owner are not part of the storage
+    uint minDelay; // first slot
+
+    // constant and in spell action
+    uint constant public MIN_DELAY = 1 days;
+    function execute() public {
+        minDelay = MIN_DELAY;
     }
 }
 
@@ -162,6 +174,24 @@ contract GovernanceTest is DSTest {
         
         governance.unSchedule(action, actionHash, sig, block.timestamp);
         assertTrue(governance.scheduler(scheduleHash) == false, "not-un-scheduled");
+    }
+
+    function testMinDelayChange() public {
+        Executor e = governance.executor();
+        // pre condition
+        assertEq(e.minDelay(), 0, "delay-pre-condition");
+
+        bytes memory sig = abi.encodeWithSignature("execute()");
+        address action = address(new GovernanceDelaySpellAction());
+        bytes32 actionHash;
+        assembly {
+            actionHash := extcodehash(action)
+        }
+        governance.schedule(action, actionHash, sig, block.timestamp);
+        governance.execute(action, actionHash, sig, block.timestamp);
+
+        // post condition
+        assertEq(e.minDelay(), 1 days, "delay-pre-condition");
 
     }
 }
