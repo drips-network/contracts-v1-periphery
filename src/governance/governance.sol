@@ -15,7 +15,7 @@ contract Governance is Ownable {
         _;
     }
 
-    Executor public executor;
+    Executor public immutable executor;
 
     event Scheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
     event Unscheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
@@ -52,6 +52,7 @@ contract Governance is Ownable {
         uint256 startTime
     ) public onlyApprovedSpells {
         require(startTime >= block.timestamp, "exe-time-not-in-the-future");
+        require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
         bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         scheduler[hash_] = true;
         emit Scheduled(spellActionAddr, sig, startTime, hash_);
@@ -59,11 +60,10 @@ contract Governance is Ownable {
 
     function unSchedule(
         address spellActionAddr,
-        bytes32 spellActionHash,
         bytes memory sig,
         uint256 startTime
     ) public onlyApprovedSpells {
-        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
+        bytes32 hash_ = hash(spellActionAddr, _getContractHash(spellActionAddr), sig, startTime);
         scheduler[hash_] = false;
         emit Scheduled(spellActionAddr, sig, startTime, hash_);
     }
@@ -78,6 +78,7 @@ contract Governance is Ownable {
         bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         require(scheduler[hash_], "unknown-spell");
         require(block.timestamp >= startTime, "execution-too-early");
+        require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
 
         executor.exec(spellActionAddr, sig);
         scheduler[hash_] = false;
