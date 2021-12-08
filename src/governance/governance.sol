@@ -3,6 +3,7 @@
 
 pragma solidity ^0.8.7;
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
+import {Address} from "openzeppelin-contracts/utils/Address.sol";
 
 // inspired by MakerDAO DSPaused
 contract Governance is Ownable {
@@ -98,21 +99,14 @@ contract Governance is Ownable {
 // malicious storage modification during execution
 // inspired by MakerDAO DSPauseProxy
 contract Executor {
-    address public owner;
-    modifier onlyOwner() {
-        require(msg.sender == owner, "notOwner");
-        _;
-    }
+    address public immutable owner;
 
     constructor() {
         owner = msg.sender;
     }
 
-    function exec(address usr, bytes memory fax) public onlyOwner returns (bytes memory out) {
-        bool ok;
-        address currOwner = owner;
-        (ok, out) = usr.delegatecall(fax);
-        require(owner == currOwner, "owner-not-changable");
-        require(ok, "delegatecall-error");
+    function exec(address usr, bytes memory fax) public returns (bytes memory out) {
+        require(msg.sender == owner, "notOwner");
+        return Address.functionDelegateCall(usr, fax);
     }
 }
