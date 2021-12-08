@@ -29,6 +29,7 @@ contract Governance is Ownable {
     }
 
     function _getContractHash(address spell) internal view returns (bytes32 h) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             h := extcodehash(spell)
         }
