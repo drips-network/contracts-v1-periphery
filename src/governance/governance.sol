@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // solhint-disable avoid-low-level-calls
+// solhint-disable no-inline-assembly
 pragma solidity ^0.8.7;
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
@@ -27,11 +28,10 @@ contract Governance is Ownable {
         _transferOwnership(owner_);
     }
 
-    function _getContractHash(address spell)
-        internal view
-        returns (bytes32 h)
-    {
-        assembly { h := extcodehash(spell) }
+    function _getContractHash(address spell) internal view returns (bytes32 h) {
+        assembly {
+            h := extcodehash(spell)
+        }
     }
 
     function hash(

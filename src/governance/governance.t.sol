@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+// solhint-disable no-inline-assembly
 pragma solidity ^0.8.7;
 
 import "ds-test/test.sol";
@@ -34,7 +35,7 @@ contract ChangeValueSpell {
     uint256 public earliestExeTime;
     bool public done;
     uint256 public delay;
-    bytes32 actionHash;
+    bytes32 public actionHash;
 
     constructor(
         Governance governance_,
@@ -45,7 +46,10 @@ contract ChangeValueSpell {
         address action_ = address(new ChangeValueSpellAction());
         governance = governance_;
         delay = delay_;
-        bytes32 actionHash_; assembly { actionHash_ := extcodehash(action_) }
+        bytes32 actionHash_;
+        assembly {
+            actionHash_ := extcodehash(action_)
+        }
         action = action_;
         actionHash = actionHash_;
     }
@@ -94,7 +98,10 @@ contract GovernanceTest is DSTest {
     function testScheduleExecuteDirectly() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        bytes32 actionHash;
+        assembly {
+            actionHash := extcodehash(action)
+        }
         governance.schedule(action, actionHash, sig, block.timestamp);
         assertPreCondition();
         governance.execute(action, actionHash, sig, block.timestamp);
@@ -113,7 +120,10 @@ contract GovernanceTest is DSTest {
     function testExecuteWithoutSchedule() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        bytes32 actionHash;
+        assembly {
+            actionHash := extcodehash(action)
+        }
         try governance.execute(action, actionHash, sig, block.timestamp) {
             assertTrue(false, "execute-schould-revert");
         } catch Error(string memory reason) {
@@ -124,7 +134,10 @@ contract GovernanceTest is DSTest {
     function testTimeDelay() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        bytes32 actionHash;
+        assembly {
+            actionHash := extcodehash(action)
+        }
         governance.schedule(action, actionHash, sig, block.timestamp + 1 days);
         assertPreCondition();
         try governance.execute(action, actionHash, sig, block.timestamp) {
