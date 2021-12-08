@@ -31,10 +31,11 @@ contract ChangeValueSpellAction {
 contract GovernanceDelaySpellAction {
     // storage of executor
     // immutable variables like owner are not part of the storage
-    uint minDelay; // first slot
+    uint256 public minDelay; // first slot
 
     // constant and in spell action
-    uint constant public MIN_DELAY = 1 days;
+    uint256 public constant MIN_DELAY = 1 days;
+
     function execute() public {
         minDelay = MIN_DELAY;
     }
@@ -171,7 +172,7 @@ contract GovernanceTest is DSTest {
         }
         bytes32 scheduleHash = governance.schedule(action, actionHash, sig, block.timestamp);
         assertTrue(governance.scheduler(scheduleHash), "not-scheduled");
-        
+
         governance.unSchedule(action, actionHash, sig, block.timestamp);
         assertTrue(governance.scheduler(scheduleHash) == false, "not-un-scheduled");
     }
@@ -192,6 +193,5 @@ contract GovernanceTest is DSTest {
 
         // post condition
         assertEq(e.minDelay(), 1 days, "delay-pre-condition");
-
     }
 }

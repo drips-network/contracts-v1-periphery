@@ -50,7 +50,7 @@ contract Governance is Ownable {
         bytes32 spellActionHash,
         bytes memory sig,
         uint256 startTime
-    ) public onlyApprovedSpells returns(bytes32 hash_) {
+    ) public onlyApprovedSpells returns (bytes32 hash_) {
         require(startTime >= block.timestamp + executor.minDelay(), "exe-time-not-in-the-future");
         require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
         hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
@@ -104,7 +104,7 @@ contract Executor {
     address public immutable owner;
 
     // governance parameter which can be changed by spells
-    uint public minDelay = 0;
+    uint256 public minDelay = 0;
 
     constructor() {
         owner = msg.sender;
