@@ -34,6 +34,7 @@ contract ChangeValueSpell {
     uint256 public earliestExeTime;
     bool public done;
     uint256 public delay;
+    bytes32 actionHash;
 
     constructor(
         Governance governance_,
@@ -41,21 +42,24 @@ contract ChangeValueSpell {
         uint256 delay_
     ) {
         sig = abi.encodeWithSignature("execute(address)", dripsContract);
-        action = address(new ChangeValueSpellAction());
+        address action_ = address(new ChangeValueSpellAction());
         governance = governance_;
         delay = delay_;
+        bytes32 actionHash_; assembly { actionHash_ := extcodehash(action_) }
+        action = action_;
+        actionHash = actionHash_;
     }
 
     function schedule() public {
         require(earliestExeTime == 0, "already-scheduled");
         earliestExeTime = block.timestamp + delay;
-        governance.schedule(action, sig, earliestExeTime);
+        governance.schedule(action, actionHash, sig, earliestExeTime);
     }
 
     function cast() public {
         require(!done, "spell-already-cast");
         done = true;
-        governance.execute(action, sig, earliestExeTime);
+        governance.execute(action, actionHash, sig, earliestExeTime);
     }
 }
 
@@ -90,9 +94,10 @@ contract GovernanceTest is DSTest {
     function testScheduleExecuteDirectly() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        governance.schedule(action, sig, block.timestamp);
+        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        governance.schedule(action, actionHash, sig, block.timestamp);
         assertPreCondition();
-        governance.execute(action, sig, block.timestamp);
+        governance.execute(action, actionHash, sig, block.timestamp);
         assertPostCondition();
     }
 
@@ -108,7 +113,8 @@ contract GovernanceTest is DSTest {
     function testExecuteWithoutSchedule() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        try governance.execute(action, sig, block.timestamp) {
+        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        try governance.execute(action, actionHash, sig, block.timestamp) {
             assertTrue(false, "execute-schould-revert");
         } catch Error(string memory reason) {
             assertEq(reason, "unknown-spell", "Invalid revert reason");
@@ -118,15 +124,16 @@ contract GovernanceTest is DSTest {
     function testTimeDelay() public {
         bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
         address action = address(new ChangeValueSpellAction());
-        governance.schedule(action, sig, block.timestamp + 1 days);
+        bytes32 actionHash; assembly { actionHash := extcodehash(action) }
+        governance.schedule(action, actionHash, sig, block.timestamp + 1 days);
         assertPreCondition();
-        try governance.execute(action, sig, block.timestamp) {
+        try governance.execute(action, actionHash, sig, block.timestamp) {
             assertTrue(false, "execution-too-early");
         } catch Error(string memory reason) {
             assertEq(reason, "unknown-spell", "Invalid revert reason");
         }
         hevm.warp(block.timestamp + 1 days);
-        governance.execute(action, sig, block.timestamp);
+        governance.execute(action, actionHash, sig, block.timestamp);
         assertPostCondition();
     }
 }

@@ -15,9 +15,9 @@ contract Governance is Ownable {
 
     Executor public executor;
 
-    event Scheduled(address spell, bytes sig, uint256 earliestExeTime, bytes32 scheduleHash);
-    event Unscheduled(address spell, bytes sig, uint256 earliestExeTime, bytes32 scheduleHash);
-    event Executed(address spell, bytes sig, uint256 earliestExeTime, bytes32 scheduleHash);
+    event Scheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
+    event Unscheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
+    event Executed(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
 
     event ApproveSpell(address spell);
     event DenySpell(address spell);
@@ -27,48 +27,59 @@ contract Governance is Ownable {
         _transferOwnership(owner_);
     }
 
+    function _getContractHash(address spell)
+        internal view
+        returns (bytes32 h)
+    {
+        assembly { h := extcodehash(spell) }
+    }
+
     function hash(
-        address spell,
+        address spellActionAddr,
+        bytes32 spellActionHash,
         bytes memory sig,
-        uint256 earliestExeTime
+        uint256 startTime
     ) public pure returns (bytes32 hash_) {
-        return keccak256(abi.encode(spell, sig, earliestExeTime));
+        return keccak256(abi.encode(spellActionAddr, spellActionHash, sig, startTime));
     }
 
     function schedule(
-        address spell,
+        address spellActionAddr,
+        bytes32 spellActionHash,
         bytes memory sig,
-        uint256 earliestExeTime
+        uint256 startTime
     ) public onlyApprovedSpells {
-        require(earliestExeTime >= block.timestamp, "exe-time-not-in-the-future");
-        bytes32 hash_ = hash(spell, sig, earliestExeTime);
+        require(startTime >= block.timestamp, "exe-time-not-in-the-future");
+        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         scheduler[hash_] = true;
-        emit Scheduled(spell, sig, earliestExeTime, hash_);
+        emit Scheduled(spellActionAddr, sig, startTime, hash_);
     }
 
     function unSchedule(
-        address spell,
+        address spellActionAddr,
+        bytes32 spellActionHash,
         bytes memory sig,
-        uint256 earliestExeTime
+        uint256 startTime
     ) public onlyApprovedSpells {
-        bytes32 hash_ = hash(spell, sig, earliestExeTime);
-        scheduler[hash(spell, sig, earliestExeTime)] = false;
-        emit Scheduled(spell, sig, earliestExeTime, hash_);
+        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
+        scheduler[hash_] = false;
+        emit Scheduled(spellActionAddr, sig, startTime, hash_);
     }
 
     // can be called by anyone after delay has passed
     function execute(
-        address spell,
+        address spellActionAddr,
+        bytes32 spellActionHash,
         bytes memory sig,
-        uint256 earliestExeTime
+        uint256 startTime
     ) public {
-        bytes32 hash_ = hash(spell, sig, earliestExeTime);
+        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         require(scheduler[hash_], "unknown-spell");
-        require(block.timestamp >= earliestExeTime, "execution-too-early");
+        require(block.timestamp >= startTime, "execution-too-early");
 
-        executor.exec(spell, sig);
+        executor.exec(spellActionAddr, sig);
         scheduler[hash_] = false;
-        emit Executed(spell, sig, earliestExeTime, hash_);
+        emit Executed(spellActionAddr, sig, startTime, hash_);
     }
 
     function approveSpell(address spell) public onlyOwner {
