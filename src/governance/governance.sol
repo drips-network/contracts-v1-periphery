@@ -96,12 +96,22 @@ contract Governance is Ownable {
 // plans are executed in an isolated storage context to protect the Governance from
 // malicious storage modification during execution
 // inspired by MakerDAO DSPauseProxy
-contract Executor is Ownable {
+contract Executor {
+    address public owner;
+    modifier onlyOwner() {
+        require(msg.sender == owner, "notOwner");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
     function exec(address usr, bytes memory fax) public onlyOwner returns (bytes memory out) {
         bool ok;
-        address currOwner = owner();
+        address currOwner = owner;
         (ok, out) = usr.delegatecall(fax);
-        require(owner() == currOwner, "owner-not-changable");
+        require(owner == currOwner, "owner-not-changable");
         require(ok, "delegatecall-error");
     }
 }
