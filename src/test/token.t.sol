@@ -629,4 +629,23 @@ contract TokenRegistryTest is DSTest {
         (uint128 collected, ) = nftRegistry.collect(noSplits());
         assertEq(collected, giveAmt);
     }
+
+    function testAuthMint() public {
+        uint128 influence = 10 ether;
+        uint128 nftTypeId = 2;
+        uint64 limit = 10;
+        addType(nftRegistry, nftTypeId, limit, 20 ether, false);
+
+        uint256 tokenId = nftRegistry.authMint(address(0xB), 2, influence);
+        assertEq(nftRegistry.ownerOf(tokenId), address(0xB));
+        assertEq(nftRegistry.influence(tokenId), influence);
+
+        // check only owner
+        nftRegistry.transferOwnership(address(0xC));
+        try nftRegistry.authMint(address(0xB), 2, influence) {
+            assertTrue(false, "auth-mint-should-fail");
+        } catch Error(string memory reason) {
+            assertEq(reason, "Ownable: caller is not the owner");
+        }
+    }
 }

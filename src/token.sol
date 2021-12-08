@@ -226,6 +226,18 @@ contract DripsToken is ERC721, Ownable {
         emit NewToken(newTokenId, nftReceiver, typeId, giveAmt);
     }
 
+    function authMint(
+        address nftReceiver,
+        uint128 typeId,
+        uint128 value
+    ) public onlyOwner returns (uint256 newTokenId) {
+        require(nftTypes[typeId].streaming == false, "type-is-streaming");
+        newTokenId = _mintInternal(nftReceiver, typeId, 0);
+        // amt is needed for influence
+        nfts[newTokenId].amt = value;
+        emit NewToken(newTokenId, nftReceiver, typeId, 0);
+    }
+
     function _mintInternal(
         address nftReceiver,
         uint128 typeId,
@@ -236,7 +248,7 @@ contract DripsToken is ERC721, Ownable {
         _mint(nftReceiver, newTokenId);
         nfts[newTokenId].timeMinted = uint64(block.timestamp);
         // transfer currency to Token registry
-        dai.transferFrom(nftReceiver, address(this), topUpAmt);
+        if (topUpAmt > 0) dai.transferFrom(nftReceiver, address(this), topUpAmt);
     }
 
     function mintStreaming(
