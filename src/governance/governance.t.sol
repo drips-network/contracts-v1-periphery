@@ -149,4 +149,19 @@ contract GovernanceTest is DSTest {
         governance.execute(action, actionHash, sig, block.timestamp);
         assertPostCondition();
     }
+
+    function testUnSchedule() public {
+        bytes memory sig = abi.encodeWithSignature("execute(address)", dripsContract);
+        address action = address(new ChangeValueSpellAction());
+        bytes32 actionHash;
+        assembly {
+            actionHash := extcodehash(action)
+        }
+        bytes32 scheduleHash = governance.schedule(action, actionHash, sig, block.timestamp);
+        assertTrue(governance.scheduler(scheduleHash), "not-scheduled");
+        
+        governance.unSchedule(action, actionHash, sig, block.timestamp);
+        assertTrue(governance.scheduler(scheduleHash) == false, "not-un-scheduled");
+
+    }
 }

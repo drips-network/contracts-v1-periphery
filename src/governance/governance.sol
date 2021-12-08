@@ -50,20 +50,21 @@ contract Governance is Ownable {
         bytes32 spellActionHash,
         bytes memory sig,
         uint256 startTime
-    ) public onlyApprovedSpells {
-        require(startTime >= block.timestamp, "exe-time-not-in-the-future");
+    ) public onlyApprovedSpells returns(bytes32 hash_) {
+        require(startTime >= block.timestamp + executor.minDelay(), "exe-time-not-in-the-future");
         require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
-        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
+        hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         scheduler[hash_] = true;
         emit Scheduled(spellActionAddr, sig, startTime, hash_);
     }
 
     function unSchedule(
         address spellActionAddr,
+        bytes32 spellActionHash,
         bytes memory sig,
         uint256 startTime
     ) public onlyApprovedSpells {
-        bytes32 hash_ = hash(spellActionAddr, _getContractHash(spellActionAddr), sig, startTime);
+        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
         scheduler[hash_] = false;
         emit Scheduled(spellActionAddr, sig, startTime, hash_);
     }
@@ -101,6 +102,9 @@ contract Governance is Ownable {
 // inspired by MakerDAO DSPauseProxy
 contract Executor {
     address public immutable owner;
+
+    // governance parameter which can be changed by spells
+    uint public minDelay = 0;
 
     constructor() {
         owner = msg.sender;
