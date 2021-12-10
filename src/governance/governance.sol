@@ -18,13 +18,22 @@ contract Governance is Ownable {
     event UnScheduled(address spell, uint256 startTime);
     event Executed(address spell);
 
+    // governance parameter which can be changed by spells
+    uint256 public minDelay = 0;
+
     constructor(address owner_) {
         executor = new Executor();
         _transferOwnership(owner_);
     }
 
+    // changing the min delay requires a spell and enforces the current minDelay for the change
+    function setMinDelay(uint256 newDelay) public {
+        require(msg.sender == address(executor), "not-a-spell");
+        minDelay = newDelay;
+    }
+
     function schedule(address spell, uint256 startTime) public onlyOwner {
-        require(startTime >= block.timestamp + executor.minDelay(), "exe-time-not-in-the-future");
+        require(startTime >= block.timestamp + minDelay, "exe-time-not-in-the-future");
         scheduler[spell] = startTime;
         emit Scheduled(spell, startTime);
     }
@@ -50,9 +59,6 @@ contract Governance is Ownable {
 contract Executor {
     address public immutable owner;
     bytes public constant SIG = abi.encodeWithSignature("execute()");
-
-    // governance parameter which can be changed by spells
-    uint256 public minDelay = 0;
 
     constructor() {
         owner = msg.sender;

@@ -35,15 +35,17 @@ contract ChangeValueSpell is Spell {
 }
 
 contract GovernanceDelaySpellAction is Spell {
-    // storage of executor
-    // immutable variables like owner are not part of the storage
-    uint256 public minDelay; // first slot
+    Governance public immutable governance;
+
+    constructor(Governance governance_) {
+        governance = governance_;
+    }
 
     // constant and in spell action
     uint256 public constant MIN_DELAY = 1 days;
 
     function execute() public override {
-        minDelay = MIN_DELAY;
+        governance.setMinDelay(MIN_DELAY);
     }
 }
 
@@ -121,17 +123,16 @@ contract GovernanceTest is DSTest {
     }
 
     function testMinDelayChange() public {
-        Executor e = governance.executor();
         // pre condition
-        assertEq(e.minDelay(), 0, "delay-pre-condition");
+        assertEq(governance.minDelay(), 0, "delay-pre-condition");
 
-        address spell = address(new GovernanceDelaySpellAction());
+        address spell = address(new GovernanceDelaySpellAction(governance));
         governance.schedule(address(spell), block.timestamp);
         assertPreCondition();
         governance.execute(address(spell));
 
         // post condition
-        assertEq(e.minDelay(), 1 days, "delay-pre-condition");
+        assertEq(governance.minDelay(), 1 days, "delay-pre-condition");
     }
 
     function testScheduleNotOwner() public {
