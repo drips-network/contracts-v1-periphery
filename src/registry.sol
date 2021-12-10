@@ -35,7 +35,7 @@ contract RadicleRegistry is Ownable {
     address public dripsTokenTemplate;
     uint256 public nextId;
 
-    mapping(uint256 => address) public usedTemplate;
+    mapping(uint256 => address) public dripsToken;
 
     constructor(
         DaiDripsHub hub_,
@@ -59,8 +59,8 @@ contract RadicleRegistry is Ownable {
         string calldata contractURI,
         InputType[] calldata inputTypes,
         SplitsReceiver[] memory splits
-    ) public returns (address) {
-        address fundingToken = Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId));
+    ) public returns (address fundingToken) {
+        fundingToken = Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId));
         IDripsToken(fundingToken).init(
             name,
             symbol,
@@ -71,16 +71,8 @@ contract RadicleRegistry is Ownable {
             splits
         );
         emit NewProject(dripsTokenTemplate, fundingToken, projectOwner, name);
-        usedTemplate[nextId] = dripsTokenTemplate;
+        dripsToken[nextId] = fundingToken;
         nextId++;
-        return fundingToken;
-    }
-
-    function projectAddr(uint256 id) public view returns (address) {
-        if (id >= nextId) {
-            return address(0x0);
-        }
-        return Clones.predictDeterministicAddress((usedTemplate[id]), bytes32(id));
     }
 
     function changeBuilder(IBuilder newBuilder) public onlyOwner {
