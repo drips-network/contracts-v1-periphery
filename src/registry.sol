@@ -1,26 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
+import {DripsToken, IDripsToken, InputType, SplitsReceiver} from "./token.sol";
 import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder/interface.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
-interface IDripsToken {
-    function init(
-        string calldata name_,
-        string calldata symbol_,
-        address owner,
-        string calldata contractURI_,
-        InputType[] memory inputTypes,
-        IBuilder builder_,
-        SplitsReceiver[] memory splits
-    ) external;
-}
-
 contract RadicleRegistry is Ownable {
-    address public governance;
     IBuilder public builder;
 
     event NewProject(
@@ -44,7 +31,7 @@ contract RadicleRegistry is Ownable {
     ) {
         _transferOwnership(owner_);
         changeBuilder(builder_);
-        dripsTokenTemplate = address(new DripsToken(hub_));
+        changeTemplate(address(new DripsToken(hub_)));
     }
 
     function changeTemplate(address newTemplate) public onlyOwner {
