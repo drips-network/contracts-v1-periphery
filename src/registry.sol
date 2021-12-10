@@ -11,10 +11,16 @@ contract RadicleRegistry is Ownable {
     address public governance;
     IBuilder public builder;
 
-    event NewProject(DripsToken indexed fundingToken, address indexed projectOwner, string name);
+    event NewProject(
+        address dripTokenTemplate,
+        DripsToken indexed fundingToken,
+        address indexed projectOwner,
+        string name
+    );
     event NewBuilder(IBuilder builder);
+    event NewTemplate(address template);
 
-    DripsToken public immutable dripTokenTemplate;
+    address public dripsTokenTemplate;
     uint256 public nextId;
 
     constructor(
@@ -24,7 +30,12 @@ contract RadicleRegistry is Ownable {
     ) {
         _transferOwnership(owner_);
         changeBuilder(builder_);
-        dripTokenTemplate = new DripsToken(hub_);
+        dripsTokenTemplate = address(new DripsToken(hub_));
+    }
+
+    function changeTemplate(address newTemplate) public onlyOwner {
+        dripsTokenTemplate = newTemplate;
+        emit NewTemplate(newTemplate);
     }
 
     function newProject(
@@ -35,21 +46,19 @@ contract RadicleRegistry is Ownable {
         InputType[] calldata inputTypes,
         SplitsReceiver[] memory splits
     ) public returns (DripsToken) {
-        bytes32 salt = bytes32(nextId++);
         DripsToken fundingToken = DripsToken(
-            Clones.cloneDeterministic(address(dripTokenTemplate), salt)
+            Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId++))
         );
         fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, splits);
-        emit NewProject(fundingToken, projectOwner, name);
+        emit NewProject(dripsTokenTemplate, fundingToken, projectOwner, name);
         return fundingToken;
     }
 
-    function projectAddr(uint256 id) public view returns (DripsToken) {
+    function projectAddr(uint256 id) public view returns (address) {
         if (id >= nextId) {
-            return DripsToken(address(0x0));
+            return address(0x0);
         }
-        return
-            DripsToken(Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id)));
+        return Clones.predictDeterministicAddress((dripsTokenTemplate), bytes32(id));
     }
 
     function changeBuilder(IBuilder newBuilder) public onlyOwner {
