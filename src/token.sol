@@ -16,7 +16,19 @@ struct InputType {
     string ipfsHash;
 }
 
-contract DripsToken is ERC721, Ownable {
+interface IDripsToken {
+    function init(
+        string calldata name_,
+        string calldata symbol_,
+        address owner,
+        string calldata contractURI_,
+        InputType[] memory inputTypes,
+        IBuilder builder_,
+        SplitsReceiver[] memory splits
+    ) external;
+}
+
+contract DripsToken is ERC721, Ownable, IDripsToken {
     address public immutable deployer;
     DaiDripsHub public immutable hub;
     IDai public immutable dai;
@@ -93,7 +105,7 @@ contract DripsToken is ERC721, Ownable {
         InputType[] memory inputTypes,
         IBuilder builder_,
         SplitsReceiver[] memory splits
-    ) public {
+    ) public override {
         require(!initialized, "already-initialized");
         initialized = true;
         require(msg.sender == deployer, "not-deployer");

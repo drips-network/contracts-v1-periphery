@@ -1,21 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.7;
 
-import {DripsToken, InputType, SplitsReceiver} from "./token.sol";
+import {DripsToken, IDripsToken, InputType, SplitsReceiver} from "./token.sol";
 import {DaiDripsHub} from "drips-hub/DaiDripsHub.sol";
 import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder/interface.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
 contract RadicleRegistry is Ownable {
-    address public governance;
     IBuilder public builder;
 
-    event NewProject(DripsToken indexed fundingToken, address indexed projectOwner, string name);
+    event NewProject(
+        address dripTokenTemplate,
+        address indexed fundingToken,
+        address indexed projectOwner,
+        string name
+    );
     event NewBuilder(IBuilder builder);
+    event NewTemplate(address template);
 
-    DripsToken public immutable dripTokenTemplate;
+    address public dripsTokenTemplate;
     uint256 public nextId;
+
+    mapping(uint256 => address) public dripsToken;
 
     constructor(
         DaiDripsHub hub_,
@@ -24,7 +31,12 @@ contract RadicleRegistry is Ownable {
     ) {
         _transferOwnership(owner_);
         changeBuilder(builder_);
-        dripTokenTemplate = new DripsToken(hub_);
+        changeTemplate(address(new DripsToken(hub_)));
+    }
+
+    function changeTemplate(address newTemplate) public onlyOwner {
+        dripsTokenTemplate = newTemplate;
+        emit NewTemplate(newTemplate);
     }
 
     function newProject(
@@ -34,22 +46,20 @@ contract RadicleRegistry is Ownable {
         string calldata contractURI,
         InputType[] calldata inputTypes,
         SplitsReceiver[] memory splits
-    ) public returns (DripsToken) {
-        bytes32 salt = bytes32(nextId++);
-        DripsToken fundingToken = DripsToken(
-            Clones.cloneDeterministic(address(dripTokenTemplate), salt)
+    ) public returns (address fundingToken) {
+        fundingToken = Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId));
+        IDripsToken(fundingToken).init(
+            name,
+            symbol,
+            projectOwner,
+            contractURI,
+            inputTypes,
+            builder,
+            splits
         );
-        fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, splits);
-        emit NewProject(fundingToken, projectOwner, name);
-        return fundingToken;
-    }
-
-    function projectAddr(uint256 id) public view returns (DripsToken) {
-        if (id >= nextId) {
-            return DripsToken(address(0x0));
-        }
-        return
-            DripsToken(Clones.predictDeterministicAddress(address(dripTokenTemplate), bytes32(id)));
+        emit NewProject(dripsTokenTemplate, fundingToken, projectOwner, name);
+        dripsToken[nextId] = fundingToken;
+        nextId++;
     }
 
     function changeBuilder(IBuilder newBuilder) public onlyOwner {

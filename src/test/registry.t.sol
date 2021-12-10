@@ -48,20 +48,22 @@ contract RegistryTest is DSTest {
             streaming: true
         });
 
-        DripsToken nftRegistry = radicleRegistry.newProject(
-            name,
-            symbol,
-            address(this),
-            ipfsHash,
-            nftTypes,
-            new SplitsReceiver[](0)
+        DripsToken nftRegistry = DripsToken(
+            radicleRegistry.newProject(
+                name,
+                symbol,
+                address(this),
+                ipfsHash,
+                nftTypes,
+                new SplitsReceiver[](0)
+            )
         );
         assertEq(nftRegistry.owner(), address(this));
         assertEq(nftRegistry.name(), name);
         assertEq(nftRegistry.symbol(), symbol);
         assertEq(nftRegistry.contractURI(), ipfsHash);
         assertEq(address(nftRegistry.hub()), address(hub));
-        assertEq(address(radicleRegistry.projectAddr(0)), address(nftRegistry));
+        assertEq(address(radicleRegistry.dripsToken(0)), address(nftRegistry));
         (uint64 limit, uint64 minted, uint128 minAmtPerSec, , ) = nftRegistry.nftTypes(0);
         assertEq(limit, limitTypeZero);
         assertEq(minAmtPerSec, 10);
@@ -77,8 +79,8 @@ contract RegistryTest is DSTest {
 
     function testProjectAddr() public {
         address nftRegistry = newNewTokenRegistry();
-        assertEq(address(radicleRegistry.projectAddr(0)), nftRegistry);
-        assertEq(address(radicleRegistry.projectAddr(1)), address(0));
+        assertEq(address(radicleRegistry.dripsToken(0)), nftRegistry);
+        assertEq(address(radicleRegistry.dripsToken(1)), address(0));
     }
 
     function testChangeGovernance() public {
