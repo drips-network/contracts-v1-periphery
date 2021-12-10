@@ -66,6 +66,6 @@ contract Executor {
 
     function exec(address spell) public returns (bytes memory out) {
         require(msg.sender == owner, "notOwner");
-        return Address.functionDelegateCall(spell, SIG);
+        return Address.functionDelegateCall(spell, SIG, "spell-execution-failed");
     }
 }
