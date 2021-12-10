@@ -7,13 +7,25 @@ import {Clones} from "openzeppelin-contracts/proxy/Clones.sol";
 import {IBuilder} from "./builder/interface.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
+interface IDripsToken {
+    function init(
+        string calldata name_,
+        string calldata symbol_,
+        address owner,
+        string calldata contractURI_,
+        InputType[] memory inputTypes,
+        IBuilder builder_,
+        SplitsReceiver[] memory splits
+    ) external;
+}
+
 contract RadicleRegistry is Ownable {
     address public governance;
     IBuilder public builder;
 
     event NewProject(
         address dripTokenTemplate,
-        DripsToken indexed fundingToken,
+        address indexed fundingToken,
         address indexed projectOwner,
         string name
     );
@@ -22,6 +34,8 @@ contract RadicleRegistry is Ownable {
 
     address public dripsTokenTemplate;
     uint256 public nextId;
+
+    mapping(uint256 => address) public usedTemplate;
 
     constructor(
         DaiDripsHub hub_,
@@ -45,12 +59,20 @@ contract RadicleRegistry is Ownable {
         string calldata contractURI,
         InputType[] calldata inputTypes,
         SplitsReceiver[] memory splits
-    ) public returns (DripsToken) {
-        DripsToken fundingToken = DripsToken(
-            Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId++))
+    ) public returns (address) {
+        address fundingToken = Clones.cloneDeterministic(dripsTokenTemplate, bytes32(nextId));
+        IDripsToken(fundingToken).init(
+            name,
+            symbol,
+            projectOwner,
+            contractURI,
+            inputTypes,
+            builder,
+            splits
         );
-        fundingToken.init(name, symbol, projectOwner, contractURI, inputTypes, builder, splits);
         emit NewProject(dripsTokenTemplate, fundingToken, projectOwner, name);
+        usedTemplate[nextId] = dripsTokenTemplate;
+        nextId++;
         return fundingToken;
     }
 
@@ -58,7 +80,7 @@ contract RadicleRegistry is Ownable {
         if (id >= nextId) {
             return address(0x0);
         }
-        return Clones.predictDeterministicAddress((dripsTokenTemplate), bytes32(id));
+        return Clones.predictDeterministicAddress((usedTemplate[id]), bytes32(id));
     }
 
     function changeBuilder(IBuilder newBuilder) public onlyOwner {

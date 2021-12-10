@@ -48,13 +48,15 @@ contract RegistryTest is DSTest {
             streaming: true
         });
 
-        DripsToken nftRegistry = radicleRegistry.newProject(
-            name,
-            symbol,
-            address(this),
-            ipfsHash,
-            nftTypes,
-            new SplitsReceiver[](0)
+        DripsToken nftRegistry = DripsToken(
+            radicleRegistry.newProject(
+                name,
+                symbol,
+                address(this),
+                ipfsHash,
+                nftTypes,
+                new SplitsReceiver[](0)
+            )
         );
         assertEq(nftRegistry.owner(), address(this));
         assertEq(nftRegistry.name(), name);
