@@ -5,95 +5,42 @@ pragma solidity ^0.8.7;
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {Address} from "openzeppelin-contracts/utils/Address.sol";
 
+interface Spell {
+    function execute() external;
+}
+
 // inspired by MakerDAO DSPaused
 contract Governance is Ownable {
-    mapping(bytes32 => bool) public scheduler;
-    mapping(address => bool) public approvedSpells;
-
-    modifier onlyApprovedSpells() {
-        require(approvedSpells[msg.sender] == true || msg.sender == owner(), "spell-not-approved");
-        _;
-    }
-
+    mapping(address => uint256) public scheduler;
     Executor public immutable executor;
 
-    event Scheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
-    event Unscheduled(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
-    event Executed(address spell, bytes sig, uint256 startTime, bytes32 scheduleHash);
-
-    event ApproveSpell(address spell);
-    event DenySpell(address spell);
+    event Scheduled(address spell, uint256 startTime);
+    event UnScheduled(address spell, uint256 startTime);
+    event Executed(address spell);
 
     constructor(address owner_) {
         executor = new Executor();
         _transferOwnership(owner_);
     }
 
-    function _getContractHash(address spell) internal view returns (bytes32 h) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            h := extcodehash(spell)
-        }
-    }
-
-    function hash(
-        address spellActionAddr,
-        bytes32 spellActionHash,
-        bytes memory sig,
-        uint256 startTime
-    ) public pure returns (bytes32 hash_) {
-        return keccak256(abi.encode(spellActionAddr, spellActionHash, sig, startTime));
-    }
-
-    function schedule(
-        address spellActionAddr,
-        bytes32 spellActionHash,
-        bytes memory sig,
-        uint256 startTime
-    ) public onlyApprovedSpells returns (bytes32 hash_) {
+    function schedule(address spell, uint256 startTime) public onlyOwner {
         require(startTime >= block.timestamp + executor.minDelay(), "exe-time-not-in-the-future");
-        require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
-        hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
-        scheduler[hash_] = true;
-        emit Scheduled(spellActionAddr, sig, startTime, hash_);
+        scheduler[spell] = startTime;
+        emit Scheduled(spell, startTime);
     }
 
-    function unSchedule(
-        address spellActionAddr,
-        bytes32 spellActionHash,
-        bytes memory sig,
-        uint256 startTime
-    ) public onlyApprovedSpells {
-        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
-        scheduler[hash_] = false;
-        emit Scheduled(spellActionAddr, sig, startTime, hash_);
+    function unSchedule(address spell) public onlyOwner {
+        emit UnScheduled(spell, scheduler[spell]);
+        scheduler[spell] = 0;
     }
 
     // can be called by anyone after delay has passed
-    function execute(
-        address spellActionAddr,
-        bytes32 spellActionHash,
-        bytes memory sig,
-        uint256 startTime
-    ) public {
-        bytes32 hash_ = hash(spellActionAddr, spellActionHash, sig, startTime);
-        require(scheduler[hash_], "unknown-spell");
-        require(block.timestamp >= startTime, "execution-too-early");
-        require(spellActionHash == _getContractHash(spellActionAddr), "bytecode-not-matching");
-
-        executor.exec(spellActionAddr, sig);
-        scheduler[hash_] = false;
-        emit Executed(spellActionAddr, sig, startTime, hash_);
-    }
-
-    function approveSpell(address spell) public onlyOwner {
-        approvedSpells[spell] = true;
-        emit ApproveSpell(spell);
-    }
-
-    function denySpell(address spell) public onlyOwner {
-        approvedSpells[spell] = false;
-        emit DenySpell(spell);
+    function execute(address spell) public {
+        require(scheduler[spell] != 0, "spell-not-scheduled");
+        require(block.timestamp >= scheduler[spell], "execute-too-early");
+        executor.exec(spell);
+        scheduler[spell] = 0;
+        emit Executed(spell);
     }
 }
 
@@ -102,6 +49,7 @@ contract Governance is Ownable {
 // inspired by MakerDAO DSPauseProxy
 contract Executor {
     address public immutable owner;
+    bytes public constant SIG = abi.encodeWithSignature("execute()");
 
     // governance parameter which can be changed by spells
     uint256 public minDelay = 0;
@@ -110,8 +58,8 @@ contract Executor {
         owner = msg.sender;
     }
 
-    function exec(address usr, bytes memory fax) public returns (bytes memory out) {
+    function exec(address spell) public returns (bytes memory out) {
         require(msg.sender == owner, "notOwner");
-        return Address.functionDelegateCall(usr, fax);
+        return Address.functionDelegateCall(spell, SIG);
     }
 }
