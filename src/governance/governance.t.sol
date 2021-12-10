@@ -133,4 +133,20 @@ contract GovernanceTest is DSTest {
         // post condition
         assertEq(e.minDelay(), 1 days, "delay-pre-condition");
     }
+
+    function testScheduleNotOwner() public {
+        governance.transferOwnership(address(0xA));
+        address spell = address(new ChangeValueSpell(dripsContract));
+        try governance.schedule(address(spell), block.timestamp) {
+            assertTrue(false, "schedule-should-revert");
+        } catch Error(string memory reason) {
+            assertEq(reason, "Ownable: caller is not the owner", "Invalid revert reason");
+        }
+    }
+
+    function testFailCallExecutorDirectly() public {
+        address spell = address(new ChangeValueSpell(dripsContract));
+        Executor e = governance.executor();
+        e.exec(spell);
+    }
 }
