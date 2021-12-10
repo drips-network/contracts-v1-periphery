@@ -7,6 +7,9 @@ import {Dai} from "drips-hub/test/TestDai.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {Hevm} from "./hevm.t.sol";
 import {DefaultSVGBuilder} from "../builder/svgBuilder.sol";
+import {ManagedDripsHubProxy} from "drips-hub/ManagedDripsHub.sol";
+import {ERC20Reserve} from "drips-hub/ERC20Reserve.sol";
+
 import "../../lib/ds-test/src/test.sol";
 
 contract TestDai is Dai {
@@ -68,7 +71,13 @@ contract TokenRegistryTest is DSTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new TestDai();
-        hub = new DaiDripsHub(CYCLE_SECS, address(this), dai);
+
+        DaiDripsHub hubLogic = new DaiDripsHub(CYCLE_SECS, dai);
+        ManagedDripsHubProxy proxy = new ManagedDripsHubProxy(hubLogic, address(this));
+        hub = DaiDripsHub(address(proxy));
+        ERC20Reserve reserve = new ERC20Reserve(dai, address(this), address(hub));
+        hub.setReserve(reserve);
+        
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new DripsToken(hub);
         // testing addStreamingType function
