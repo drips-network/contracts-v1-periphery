@@ -29,9 +29,9 @@ contract RadicleRegistry is Ownable {
         IBuilder builder_,
         address owner_
     ) {
-        _transferOwnership(owner_);
         changeBuilder(builder_);
         changeTemplate(address(new DripsToken(hub_)));
+        _transferOwnership(owner_);
     }
 
     function changeTemplate(address newTemplate) public onlyOwner {

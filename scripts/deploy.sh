@@ -30,6 +30,7 @@ echo "Ethereum Chain:           $(seth chain)"
 echo "ETH_FROM:                 $ETH_FROM"
 echo "ETH_GAS_PRICE:            $ETH_GAS_PRICE"
 echo "ETH_GAS:                  $ETH_GAS"
+echo "ETHERSCAN_API_KEY:        $ETHERSCAN_API_KEY"
 
 read -p "Ready to deploy? [y/n] " -n 1 -r
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -75,7 +76,7 @@ echo "Governance (Multi-Sig): $GOVERNANCE"
 echo "Governance Contract       Owner: $(seth call $DRIPS_GOVERNANCE 'owner()(address)')"
 echo "Governance Executor: $GOVERNANCE_EXECUTOR"
 echo "DRIPS_HUB                 Admin: $(seth call $CONTRACT_DRIPS_HUB 'admin()(address)')"
-echo "RESERVE                   Owner: $(seth call $RESERVE 'reserve()(address)')"
+echo "RESERVE                   Owner: $(seth call $RESERVE 'owner()(address)')"
 echo "RADICLE_REGISTRY          Owner: $(seth call $RADICLE_REGISTRY 'owner()(address)')"
 echo "BUILDER                   Owner: $(seth call $BUILDER 'owner()(address)')"
 
@@ -93,7 +94,7 @@ addValuesToFile $DEPLOYMENT_FILE <<EOF
     "CYCLE_SECS"                 : "$CYCLE_SECS",
     "COMMIT_HASH"                : "$(git --git-dir .git rev-parse HEAD )",
     "GOVERNANCE_ADDRESS"         : "$GOVERNANCE",
-    "DRIPS_GOVERNANCE"           : "$DRIPS_GOVERNANCE"
+    "CONTRACT_DRIPS_GOVERNANCE"  : "$DRIPS_GOVERNANCE"
 }
 EOF
 
@@ -103,7 +104,10 @@ cat $DEPLOYMENT_FILE
 
 message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
-  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB $CYCLE_SECS $GOVERNANCE $DAI
+  dapp verify-contract --async 'src/governance/governance.sol:Governance' $DRIPS_GOVERNANCE $GOVERNANCE
+  dapp verify-contract --async 'src/governance/governance.sol:Executor' $GOVERNANCE_EXECUTOR
+  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB_LOGIC $CYCLE_SECS $DAI
+  dapp verify-contract --async 'lib/radicle-drips-hub/src/ManagedDripsHubProxy.sol:ManagedDripsHubProxy' $DRIPS_HUB $DRIPS_HUB_LOGIC 0x$ETH_FROM
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $DRIPS_HUB $BUILDER $GOVERNANCE
   dapp verify-contract --async 'src/ipfsBuilder.sol:DefaultIPFSBuilder' $BUILDER $GOVERNANCE "\"$DEFAULT_IPFS_IMG\""
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
