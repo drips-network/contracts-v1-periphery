@@ -77,7 +77,7 @@ contract TokenRegistryTest is DSTest {
         hub = DaiDripsHub(address(proxy));
         ERC20Reserve reserve = new ERC20Reserve(dai, address(this), address(hub));
         hub.setReserve(reserve);
-        
+
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
         nftRegistry = new DripsToken(hub);
         // testing addStreamingType function
