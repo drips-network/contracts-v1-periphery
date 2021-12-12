@@ -24,14 +24,9 @@ contract RadicleRegistry is Ownable {
 
     mapping(uint256 => address) public dripsToken;
 
-    constructor(
-        DaiDripsHub hub_,
-        IBuilder builder_,
-        address owner_
-    ) {
+    constructor(IBuilder builder_, address owner) {
         changeBuilder(builder_);
-        changeTemplate(address(new DripsToken(hub_)));
-        _transferOwnership(owner_);
+        _transferOwnership(owner);
     }
 
     function changeTemplate(address newTemplate) public onlyOwner {

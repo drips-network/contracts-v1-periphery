@@ -58,7 +58,7 @@ echo "Drips Hub Logic Contract: $DRIPS_HUB_LOGIC"
 [ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(dapp create ManagedDripsHubProxy $DRIPS_HUB_LOGIC 0x$ETH_FROM)
 echo "Drips Hub Contract: $DRIPS_HUB"
 
-[ -z "$RESERVE" ] && RESERVE=$(dapp create ERC20Reserve $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB) 
+[ -z "$RESERVE" ] && RESERVE=$(dapp create ERC20Reserve $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB)
 echo "Reserve Contract: $RESERVE"
 
 # give hub ownership to executor
@@ -67,9 +67,19 @@ seth send $DRIPS_HUB 'changeAdmin(address)()' $GOVERNANCE_EXECUTOR
 [ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $GOVERNANCE_EXECUTOR "\"$DEFAULT_IPFS_IMG\"")
 echo "Builder Contract: $BUILDER"
 
-[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $DRIPS_HUB $BUILDER $GOVERNANCE_EXECUTOR)
+# Set initial ownership to the deployer address
+[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $BUILDER $ETH_FROM)
 
 echo "Radicle Registry Contract: $RADICLE_REGISTRY"
+
+[ -z "$TOKEN_TEMPLATE" ] && TOKEN_TEMPLATE=$(dapp create DripsToken $DRIPS_HUB $RADICLE_REGISTRY)
+
+echo "Token template Contract: $TOKEN_TEMPLATE"
+
+# Set token template
+seth send $RADICLE_REGISTRY 'changeTemplate(address)()' $TOKEN_TEMPLATE
+# Transfer ownership to the governance
+seth send $RADICLE_REGISTRY 'transferOwnership(address)()' $GOVERNANCE_EXECUTOR
 
 message Check Correct Governance
 echo "Governance (Multi-Sig): $GOVERNANCE"

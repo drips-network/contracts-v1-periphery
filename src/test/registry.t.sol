@@ -30,7 +30,9 @@ contract RegistryTest is DSTest {
         hub.setReserve(reserve);
 
         builder = new DefaultSVGBuilder();
-        radicleRegistry = new RadicleRegistry(hub, builder, address(this));
+        radicleRegistry = new RadicleRegistry(builder, address(this));
+        DripsToken template = new DripsToken(hub, address(radicleRegistry));
+        radicleRegistry.changeTemplate(address(template));
     }
 
     function newNewTokenRegistry() public returns (address) {

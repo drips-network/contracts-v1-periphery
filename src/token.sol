@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import {ERC721} from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/access/Ownable.sol";
+import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {DaiDripsHub, DripsReceiver, IDai, SplitsReceiver} from "drips-hub/DaiDripsHub.sol";
 import {IBuilder} from "./builder/interface.sol";
 
@@ -85,8 +85,8 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
     event NewBuilder(IBuilder builder);
     event SplitsUpdated(SplitsReceiver[] splits);
 
-    constructor(DaiDripsHub hub_) ERC721("", "") {
-        deployer = msg.sender;
+    constructor(DaiDripsHub hub_, address deployer_) ERC721("", "") {
+        deployer = deployer_;
         hub = hub_;
         dai = hub_.dai();
         cycleSecs = hub_.cycleSecs();

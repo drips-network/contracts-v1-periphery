@@ -79,7 +79,7 @@ contract TokenRegistryTest is DSTest {
         hub.setReserve(reserve);
 
         defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
-        nftRegistry = new DripsToken(hub);
+        nftRegistry = new DripsToken(hub, address(this));
         // testing addStreamingType function
         builder = new DefaultSVGBuilder();
         nftRegistry.init(
@@ -482,7 +482,7 @@ contract TokenRegistryTest is DSTest {
     }
 
     function testSplits() public {
-        DripsToken projectB = new DripsToken(hub);
+        DripsToken projectB = new DripsToken(hub, address(this));
         address arbitrarySplitsReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
@@ -553,7 +553,7 @@ contract TokenRegistryTest is DSTest {
 
     function testSplitWithInit() public {
         address alice = address(0x123);
-        DripsToken projectB = new DripsToken(hub);
+        DripsToken projectB = new DripsToken(hub, address(this));
 
         uint128 typeId = 0;
         uint64 limit = 1;
