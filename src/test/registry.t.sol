@@ -8,6 +8,8 @@ import {DripsToken, InputType, SplitsReceiver} from "./../token.sol";
 import {Hevm} from "./hevm.t.sol";
 import {Dai} from "drips-hub/test/TestDai.sol";
 import {DefaultSVGBuilder} from "./../builder/svgBuilder.sol";
+import {ManagedDripsHubProxy} from "drips-hub/ManagedDripsHub.sol";
+import {ERC20Reserve} from "drips-hub/ERC20Reserve.sol";
 
 contract RegistryTest is DSTest {
     RadicleRegistry public radicleRegistry;
@@ -20,9 +22,17 @@ contract RegistryTest is DSTest {
     function setUp() public {
         hevm = Hevm(HEVM_ADDRESS);
         dai = new Dai();
-        hub = new DaiDripsHub(CYCLE_SECS, address(this), dai);
+
+        DaiDripsHub hubLogic = new DaiDripsHub(CYCLE_SECS, dai);
+        ManagedDripsHubProxy proxy = new ManagedDripsHubProxy(hubLogic, address(this));
+        hub = DaiDripsHub(address(proxy));
+        ERC20Reserve reserve = new ERC20Reserve(dai, address(this), address(hub));
+        hub.setReserve(reserve);
+
         builder = new DefaultSVGBuilder();
-        radicleRegistry = new RadicleRegistry(hub, builder, address(this));
+        radicleRegistry = new RadicleRegistry(builder, address(this));
+        DripsToken template = new DripsToken(hub, address(radicleRegistry));
+        radicleRegistry.changeTemplate(address(template));
     }
 
     function newNewTokenRegistry() public returns (address) {
