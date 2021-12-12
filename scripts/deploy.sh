@@ -40,7 +40,7 @@ fi
 
 # build contracts
 message Build Contracts
-#dapp build
+dapp build
 
 # deploy Test Dai if not defined
 [ -z "$DAI" ] && DAI=$(dapp create Dai)
