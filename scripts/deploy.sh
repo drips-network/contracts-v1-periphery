@@ -102,7 +102,7 @@ message Deployment JSON: $DEPLOYMENT_FILE
 
 cat $DEPLOYMENT_FILE
 
-# message Verify Contracts on Etherscan
+message Verify Contracts on Etherscan
 if [ -n "$ETHERSCAN_API_KEY" ]; then
   dapp verify-contract --async 'src/governance/governance.sol:Governance' $DRIPS_GOVERNANCE $GOVERNANCE
   dapp verify-contract --async 'src/governance/governance.sol:Executor' $GOVERNANCE_EXECUTOR
