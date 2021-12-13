@@ -42,12 +42,12 @@ contract DefaultIPFSBuilder is BaseBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active
     ) external view override returns (string memory) {
         string memory tokenIdStr = Strings.toString(tokenId);
         string memory nftTypeStr = Strings.toString(nftType);
-        string memory supportRate = _toTwoDecimals(amtPerCycle);
+        string memory supportRate = _formatSupportRate(amtPerSec);
         return
             _buildJSON(
                 projectName,
@@ -65,11 +65,11 @@ contract DefaultIPFSBuilder is BaseBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active,
         string memory ipfsHash
     ) external pure override returns (string memory) {
-        string memory supportRate = _toTwoDecimals(amtPerCycle);
+        string memory supportRate = _formatSupportRate(amtPerSec);
         string memory tokenIdStr = Strings.toString(tokenId);
         string memory nftTypeStr = Strings.toString(nftType);
         return

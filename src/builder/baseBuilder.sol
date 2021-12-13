@@ -68,11 +68,15 @@ abstract contract BaseBuilder is IBuilder {
             );
     }
 
-    function _toTwoDecimals(uint128 number) internal pure returns (string memory numberString) {
+    function _formatSupportRate(uint128 amtPerSec) internal pure returns (string memory) {
+        return _toTwoDecimals(amtPerSec * 30 days);
+    }
+
+    function _toTwoDecimals(uint256 number) internal pure returns (string memory numberString) {
         // decimal after the first two decimals are rounded up or down
         number += 0.005 * 10**18;
         numberString = Strings.toString(number / 1 ether);
-        uint128 twoDecimals = (number % 1 ether) / 10**16;
+        uint256 twoDecimals = (number % 1 ether) / 10**16;
         if (twoDecimals > 0) {
             numberString = string(
                 abi.encodePacked(

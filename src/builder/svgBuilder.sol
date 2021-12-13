@@ -37,12 +37,12 @@ contract DefaultSVGBuilder is BaseBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active
     ) external pure override returns (string memory) {
         string memory tokenIdStr = Strings.toString(tokenId);
         string memory nftTypeStr = Strings.toString(nftType);
-        string memory supportRate = _toTwoDecimals(amtPerCycle);
+        string memory supportRate = _formatSupportRate(amtPerSec);
         string memory svg = Base64.encode(bytes(_buildSVG(projectName, tokenIdStr, supportRate)));
         string memory imageObj = string(abi.encodePacked("data:image/svg+xml;base64,", svg));
         return
@@ -62,11 +62,11 @@ contract DefaultSVGBuilder is BaseBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active,
         string memory ipfsHash
     ) external pure override returns (string memory) {
-        string memory supportRate = _toTwoDecimals(amtPerCycle);
+        string memory supportRate = _formatSupportRate(amtPerSec);
         string memory tokenIdStr = Strings.toString(tokenId);
         string memory nftTypeStr = Strings.toString(nftType);
         return

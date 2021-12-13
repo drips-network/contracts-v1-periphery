@@ -19,13 +19,15 @@ addValuesToFile() {
 DEPLOYMENT_FILE=${1:-./deployment_$(seth chain).json}
 GOVERNANCE=${1:-$ETH_FROM}
 DEFAULT_IPFS_IMG=${1:-QmcjdWo3oDYPGdLCdmEpGGpFsFKbfXwCLc5kdTJj9seuLx}
-[ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # one day secs
+[ -z "$CYCLE_SECS" ] && (( CYCLE_SECS = 7 * 24 * 60 * 60 )) # 1 week
+[ -z "$LOCK_SECS" ] && (( LOCK_SECS = 30 * 24 * 60 * 60 )) # 30 days
 
 message Deployment Config
 echo "Governance Address:       $GOVERNANCE"
 echo "DAI Address:              $DAI"
 echo "Default IPFS Hash image:  $DEFAULT_IPFS_IMG"
 echo "Config Cycle Secs:        $CYCLE_SECS"
+echo "Config Lock Secs:         $LOCK_SECS"
 echo "Ethereum Chain:           $(seth chain)"
 echo "ETH_FROM:                 $ETH_FROM"
 echo "ETH_GAS_PRICE:            $ETH_GAS_PRICE"
@@ -82,7 +84,7 @@ seth send $BUILDER 'deny(address)' $ETH_FROM
 
 echo "Radicle Registry Contract: $RADICLE_REGISTRY"
 
-[ -z "$TOKEN_TEMPLATE" ] && TOKEN_TEMPLATE=$(dapp create DripsToken $DRIPS_HUB $RADICLE_REGISTRY)
+[ -z "$TOKEN_TEMPLATE" ] && TOKEN_TEMPLATE=$(dapp create DripsToken $DRIPS_HUB $RADICLE_REGISTRY $LOCK_SECS)
 
 echo "Token template Contract: $TOKEN_TEMPLATE"
 

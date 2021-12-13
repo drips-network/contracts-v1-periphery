@@ -27,7 +27,8 @@ contract TokenRegistryTest is DSTest {
     Hevm public hevm;
 
     uint256 public constant ONE_TRILLION_DAI = (1 ether * 10**12);
-    uint64 public constant CYCLE_SECS = 30 days;
+    uint64 public constant CYCLE_SECS = 7 days;
+    uint64 public constant LOCK_SECS = 30 days;
 
     uint128 public defaultMinAmtPerSec;
 
@@ -78,8 +79,8 @@ contract TokenRegistryTest is DSTest {
         ERC20Reserve reserve = new ERC20Reserve(dai, address(this), address(hub));
         hub.setReserve(reserve);
 
-        defaultMinAmtPerSec = uint128(fundingInSeconds(10 ether));
-        nftRegistry = new DripsToken(hub, address(this));
+        defaultMinAmtPerSec = amtPerSecThatLocks(10 ether);
+        nftRegistry = new DripsToken(hub, address(this), LOCK_SECS);
         // testing addStreamingType function
         builder = new DefaultSVGBuilder();
         nftRegistry.init(
@@ -97,8 +98,8 @@ contract TokenRegistryTest is DSTest {
         hevm.warp(0);
     }
 
-    function fundingInSeconds(uint256 fundingPerCycle) public pure returns (uint256) {
-        return fundingPerCycle / CYCLE_SECS;
+    function amtPerSecThatLocks(uint256 amtToLock) public pure returns (uint128) {
+        return uint128(amtToLock / LOCK_SECS);
     }
 
     function mint(uint128 amtPerSec, uint128 amtTopUp) public returns (uint256 tokenId) {
@@ -121,7 +122,7 @@ contract TokenRegistryTest is DSTest {
         assertEq(collectable, expectedCollected, "collectable-invalid");
         assertEq(dai.balanceOf(address(this)), preBalance + expectedCollected, "collect-failed");
         assertEq(
-            uint256(amtTopUp - (defaultMinAmtPerSec * 1 * CYCLE_SECS)),
+            uint256(amtTopUp - (defaultMinAmtPerSec * LOCK_SECS)),
             uint256(nftRegistry.withdrawable(uint128(tokenId))),
             "incorrect-withdrawable-amount"
         );
@@ -399,8 +400,7 @@ contract TokenRegistryTest is DSTest {
 
     function testInfluence() public {
         uint128 amtTopUp = 30 ether;
-        uint256 amtPerCycle = 10 ether;
-        uint128 amtPerSec = uint128(fundingInSeconds(amtPerCycle));
+        uint128 amtPerSec = amtPerSecThatLocks(10 ether);
         uint256 tokenId = mint(amtPerSec, amtTopUp);
         // zero influence at mint block.timestamp
         assertEq(nftRegistry.influence(tokenId), 0);
@@ -408,7 +408,7 @@ contract TokenRegistryTest is DSTest {
         uint256 initTime = block.timestamp;
 
         // enough for 3 cycles
-        hevm.warp(block.timestamp + CYCLE_SECS * 3 - 1);
+        hevm.warp(block.timestamp + LOCK_SECS * 3 - 1);
         assertTrue(nftRegistry.streaming(tokenId), "not-streaming-token");
         assertEq(nftRegistry.influence(tokenId), (block.timestamp - initTime) * amtPerSec);
 
@@ -437,7 +437,7 @@ contract TokenRegistryTest is DSTest {
     function testActiveUntil() public {
         hevm.warp(block.timestamp + 2 days);
         uint128 amtTopUp = 30 ether;
-        uint128 amtPerSec = uint128(fundingInSeconds(10 ether));
+        uint128 amtPerSec = amtPerSecThatLocks(10 ether);
         uint256 tokenId = mint(amtPerSec, amtTopUp);
         uint256 activeUntil = nftRegistry.activeUntil(tokenId);
 
@@ -463,10 +463,10 @@ contract TokenRegistryTest is DSTest {
         dai.mint(amtTopUp);
 
         hevm.warp(block.timestamp + (amtTopUp % 30 days));
-        uint128 amtCycle = 10 ether;
-        uint128 amtPerSec = uint128(fundingInSeconds(amtCycle));
+        uint128 amtLocked = 10 ether;
+        uint128 amtPerSec = amtPerSecThatLocks(amtLocked);
 
-        if (amtTopUp < amtCycle) {
+        if (amtTopUp < amtLocked) {
             topUpTooLowShouldFail(amtPerSec, amtTopUp);
         } else {
             uint256 tokenId = mint(amtPerSec, amtTopUp);
@@ -482,7 +482,7 @@ contract TokenRegistryTest is DSTest {
     }
 
     function testSplits() public {
-        DripsToken projectB = new DripsToken(hub, address(this));
+        DripsToken projectB = new DripsToken(hub, address(this), LOCK_SECS);
         address arbitrarySplitsReceiver = address(uint160(address(projectB)) + 1);
         projectB.init(
             "Project B",
@@ -553,7 +553,7 @@ contract TokenRegistryTest is DSTest {
 
     function testSplitWithInit() public {
         address alice = address(0x123);
-        DripsToken projectB = new DripsToken(hub, address(this));
+        DripsToken projectB = new DripsToken(hub, address(this), LOCK_SECS);
 
         uint128 typeId = 0;
         uint64 limit = 1;

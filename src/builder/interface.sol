@@ -7,7 +7,7 @@ interface IBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active
     ) external view returns (string memory);
 
@@ -16,7 +16,7 @@ interface IBuilder {
         uint128 tokenId,
         uint128 nftType,
         bool streaming,
-        uint128 amtPerCycle,
+        uint128 amtPerSec,
         bool active,
         string memory ipfsHash
     ) external view returns (string memory);

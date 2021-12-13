@@ -33,6 +33,7 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
     DaiDripsHub public immutable hub;
     IDai public immutable dai;
     uint64 public immutable cycleSecs;
+    uint64 public immutable lockSecs;
     IBuilder public builder;
 
     string internal _name;
@@ -85,11 +86,16 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
     event NewBuilder(IBuilder builder);
     event SplitsUpdated(SplitsReceiver[] splits);
 
-    constructor(DaiDripsHub hub_, address deployer_) ERC721("", "") {
+    constructor(
+        DaiDripsHub hub_,
+        address deployer_,
+        uint64 lockSecs_
+    ) ERC721("", "") {
         deployer = deployer_;
         hub = hub_;
         dai = hub_.dai();
         cycleSecs = hub_.cycleSecs();
+        lockSecs = lockSecs_;
     }
 
     modifier onlyTokenHolder(uint256 tokenId) {
@@ -271,7 +277,7 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
     ) public returns (uint256 newTokenId) {
         require(amtPerSec >= nftTypes[typeId].minAmt, "amt-per-sec-too-low");
         require(nftTypes[typeId].streaming, "nft-type-not-streaming");
-        require(topUpAmt >= amtPerSec * cycleSecs, "toUp-too-low");
+        require(topUpAmt >= amtPerSec * lockSecs, "toUp-too-low");
 
         newTokenId = _mintInternal(nftReceiver, typeId, topUpAmt);
         // start streaming
@@ -374,7 +380,7 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
         if (nftTypes[tokenType(tokenId)].streaming == false) return 0;
         Token storage nft = nfts[tokenId];
         uint64 spentUntil = uint64(block.timestamp);
-        uint64 minSpentUntil = nft.timeMinted + cycleSecs;
+        uint64 minSpentUntil = nft.timeMinted + lockSecs;
         if (spentUntil < minSpentUntil) spentUntil = minSpentUntil;
         uint192 spent = (spentUntil - nft.lastUpdate) * uint192(nft.amt);
         if (nft.lastBalance < spent) return nft.lastBalance % nft.amt;
@@ -414,7 +420,6 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "nonexistent-token");
         string memory ipfsHash = nftTypes[tokenType(tokenId)].ipfsHash;
-        uint128 amtPerCycle = nfts[tokenId].amt * cycleSecs;
         if (bytes(ipfsHash).length == 0) {
             return
                 builder.buildMetaData(
@@ -422,7 +427,7 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
                     uint128(tokenId),
                     tokenType(tokenId),
                     nftTypes[tokenType(tokenId)].streaming,
-                    amtPerCycle,
+                    nfts[tokenId].amt,
                     active(tokenId)
                 );
         }
@@ -432,7 +437,7 @@ contract DripsToken is ERC721, Ownable, IDripsToken {
                 uint128(tokenId),
                 tokenType(tokenId),
                 nftTypes[tokenType(tokenId)].streaming,
-                amtPerCycle,
+                nfts[tokenId].amt,
                 active(tokenId),
                 ipfsHash
             );
