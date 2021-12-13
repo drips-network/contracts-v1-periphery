@@ -68,8 +68,14 @@ seth send $DRIPS_HUB 'setReserve(address)()' $RESERVE
 # give hub ownership to executor
 seth send $DRIPS_HUB 'changeAdmin(address)()' $GOVERNANCE_EXECUTOR
 
-[ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $GOVERNANCE_EXECUTOR "\"$DEFAULT_IPFS_IMG\"")
+[ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $ETH_FROM "\"$DEFAULT_IPFS_IMG\"")
 echo "Builder Contract: $BUILDER"
+
+# ownership permissions Builder
+seth send $BUILDER 'rely(address)' $GOVERNANCE_EXECUTOR
+seth send $BUILDER 'rely(address)' $IPFS_OWNER
+seth send $BUILDER 'deny(address)' $ETH_FROM
+
 
 # Set initial ownership to the deployer address
 [ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $BUILDER $ETH_FROM)
