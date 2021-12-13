@@ -31,6 +31,7 @@ echo "ETH_FROM:                 $ETH_FROM"
 echo "ETH_GAS_PRICE:            $ETH_GAS_PRICE"
 echo "ETH_GAS:                  $ETH_GAS"
 echo "ETHERSCAN_API_KEY:        $ETHERSCAN_API_KEY"
+echo "IPFS_OWNER"               $IPFS_OWNER
 
 read -p "Ready to deploy? [y/n] " -n 1 -r
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -67,8 +68,14 @@ seth send $DRIPS_HUB 'setReserve(address)()' $RESERVE
 # give hub ownership to executor
 seth send $DRIPS_HUB 'changeAdmin(address)()' $GOVERNANCE_EXECUTOR
 
-[ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $GOVERNANCE_EXECUTOR "\"$DEFAULT_IPFS_IMG\"")
+[ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $ETH_FROM "\"$DEFAULT_IPFS_IMG\"")
 echo "Builder Contract: $BUILDER"
+
+# ownership permissions Builder
+seth send $BUILDER 'rely(address)' $GOVERNANCE_EXECUTOR
+seth send $BUILDER 'rely(address)' $IPFS_OWNER
+seth send $BUILDER 'deny(address)' $ETH_FROM
+
 
 # Set initial ownership to the deployer address
 [ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $BUILDER $ETH_FROM)
