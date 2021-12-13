@@ -9,25 +9,25 @@ contract DefaultIPFSBuilder is BaseBuilder {
     string public defaultIpfsHash;
 
     // --- Auth Owner---
-    mapping(address => uint256) public owner;
+    mapping(address => bool) public owner;
 
     function rely(address usr) external onlyOwner {
-        owner[usr] = 1;
+        owner[usr] = true;
     }
 
     function deny(address usr) external onlyOwner {
-        owner[usr] = 0;
+        owner[usr] = false;
     }
 
     modifier onlyOwner() {
-        require(owner[msg.sender] == 1, "not-authorized");
+        require(owner[msg.sender] == true, "not-authorized");
         _;
     }
 
     event NewDefaultIPFS(string ipfsHash);
 
     constructor(address owner_, string memory defaultIpfsHash_) {
-        owner[owner_] = 1;
+        owner[owner_] = true;
         defaultIpfsHash = defaultIpfsHash_;
         emit NewDefaultIPFS(defaultIpfsHash);
     }
