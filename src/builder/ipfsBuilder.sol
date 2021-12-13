@@ -10,12 +10,15 @@ contract DefaultIPFSBuilder is BaseBuilder {
 
     // --- Auth Owner---
     mapping(address => uint256) public owner;
+
     function rely(address usr) external onlyOwner {
         owner[usr] = 1;
     }
+
     function deny(address usr) external onlyOwner {
         owner[usr] = 0;
     }
+
     modifier onlyOwner() {
         require(owner[msg.sender] == 1, "not-authorized");
         _;
