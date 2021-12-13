@@ -4,13 +4,27 @@ pragma solidity ^0.8.7;
 import "./baseBuilder.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
-contract DefaultIPFSBuilder is BaseBuilder, Ownable {
+contract DefaultIPFSBuilder is BaseBuilder {
     address public governance;
     string public defaultIpfsHash;
+
+    // --- Auth Owner---
+    mapping(address => uint256) public owner;
+    function rely(address usr) external onlyOwner {
+        owner[usr] = 1;
+    }
+    function deny(address usr) external onlyOwner {
+        owner[usr] = 0;
+    }
+    modifier onlyOwner() {
+        require(owner[msg.sender] == 1, "not-authorized");
+        _;
+    }
+
     event NewDefaultIPFS(string ipfsHash);
 
     constructor(address owner_, string memory defaultIpfsHash_) {
-        _transferOwnership(owner_);
+        owner[owner_] = 1;
         defaultIpfsHash = defaultIpfsHash_;
         emit NewDefaultIPFS(defaultIpfsHash);
     }
