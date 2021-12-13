@@ -17,7 +17,7 @@ addValuesToFile() {
 }
 
 DEPLOYMENT_FILE=${1:-./deployment_$(seth chain).json}
-GOVERNANCE=${1:-0x$ETH_FROM}
+GOVERNANCE=${1:-$ETH_FROM}
 DEFAULT_IPFS_IMG=${1:-QmcjdWo3oDYPGdLCdmEpGGpFsFKbfXwCLc5kdTJj9seuLx}
 [ -z "$CYCLE_SECS" ] && CYCLE_SECS=86400 # one day secs
 
@@ -55,11 +55,14 @@ message Drips Contracts Deployment
 
 [ -z "$DRIPS_HUB_LOGIC" ] && DRIPS_HUB_LOGIC=$(dapp create DaiDripsHub $CYCLE_SECS $DAI)
 echo "Drips Hub Logic Contract: $DRIPS_HUB_LOGIC"
-[ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(dapp create ManagedDripsHubProxy $DRIPS_HUB_LOGIC 0x$ETH_FROM)
+[ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(dapp create ManagedDripsHubProxy $DRIPS_HUB_LOGIC $ETH_FROM)
 echo "Drips Hub Contract: $DRIPS_HUB"
 
-[ -z "$RESERVE" ] && RESERVE=$(dapp create ERC20Reserve $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB)
+[ -z "$RESERVE" ] && RESERVE=$(dapp create DaiReserve $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB)
 echo "Reserve Contract: $RESERVE"
+
+# set reserve dependency in drips hub
+seth send $DRIPS_HUB 'setReserve(address)()' $RESERVE
 
 # give hub ownership to executor
 seth send $DRIPS_HUB 'changeAdmin(address)()' $GOVERNANCE_EXECUTOR
@@ -117,7 +120,8 @@ if [ -n "$ETHERSCAN_API_KEY" ]; then
   dapp verify-contract --async 'src/governance/governance.sol:Governance' $DRIPS_GOVERNANCE $GOVERNANCE
   dapp verify-contract --async 'src/governance/governance.sol:Executor' $GOVERNANCE_EXECUTOR
   dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB_LOGIC $CYCLE_SECS $DAI
-  dapp verify-contract --async 'lib/radicle-drips-hub/src/ManagedDripsHub.sol:ManagedDripsHubProxy' $DRIPS_HUB $DRIPS_HUB_LOGIC 0x$ETH_FROM
+  dapp verify-contract --async 'lib/radicle-drips-hub/src/ManagedDripsHub.sol:ManagedDripsHubProxy' $DRIPS_HUB $DRIPS_HUB_LOGIC $ETH_FROM
+  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiReserve.sol:DaiReserve' $RESERVE $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB
   dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $DRIPS_HUB $BUILDER $GOVERNANCE_EXECUTOR
   dapp verify-contract --async 'src/ipfsBuilder.sol:DefaultIPFSBuilder' $BUILDER $GOVERNANCE "\"$DEFAULT_IPFS_IMG\""
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
