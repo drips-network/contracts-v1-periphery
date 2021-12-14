@@ -122,7 +122,7 @@ if [ -n "$ETHERSCAN_API_KEY" ]; then
   dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB_LOGIC $CYCLE_SECS $DAI
   dapp verify-contract --async 'lib/radicle-drips-hub/src/ManagedDripsHub.sol:ManagedDripsHubProxy' $DRIPS_HUB $DRIPS_HUB_LOGIC $ETH_FROM
   dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiReserve.sol:DaiReserve' $RESERVE $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB
-  dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $DRIPS_HUB $BUILDER $GOVERNANCE_EXECUTOR
+  dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $BUILDER $ETH_FROM
   dapp verify-contract --async 'src/ipfsBuilder.sol:DefaultIPFSBuilder' $BUILDER $GOVERNANCE "\"$DEFAULT_IPFS_IMG\""
   TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripTokenTemplate()(address)')
   dapp verify-contract --async 'src/token.sol:DripsToken' $TOKEN_TEMPLATE $DRIPS_HUB
