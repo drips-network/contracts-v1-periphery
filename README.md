@@ -80,59 +80,59 @@ Set up environment variables configuring the deployed contracts:
 # OPTIONAL
 # Address of Dai token to use.
 # If not set, a dummy instance is deployed where `ETH_FROM` holds all the tokens.
-export $DAI="<ADDRESS>"
+export DAI="<ADDRESS>"
 
 # OPTIONAL
 # Address of the governance DAO to use. If not set, `ETH_FROM` is used.
-export $GOVERNANCE="<ADDRESS>"
+export GOVERNANCE="<ADDRESS>"
 
 # OPTIONAL
 # Address of a governance timelock contract to use. If not set, a new instance is deployed.
-export $DRIPS_GOVERNANCE="<ADDRESS>"
+export DRIPS_GOVERNANCE="<ADDRESS>"
 
 # OPTIONAL
 # Address of NFT registry to use. If not set, a new instance is deployed.
-export $RADICLE_REGISTRY="<ADDRESS>"
+export RADICLE_REGISTRY="<ADDRESS>"
 
 # OPTIONAL
 # Address of the initial NFT logic template to use in the NFT registry when deploying a new token.
 # If not set, a new instance is deployed.
-export $TOKEN_TEMPLATE="<ADDRESS>"
+export TOKEN_TEMPLATE="<ADDRESS>"
 
 # OPTIONAL
 # Streaming NFT minimum duration. Default is 30 days.
-export $LOCK_SECS="<SECONDS>"
+export LOCK_SECS="<SECONDS>"
 
 # OPTIONAL
 # Address of the default NFT images builder to use.
 # If not set, a new instance using IPFS images is deployed.
-export $BUILDER="<ADDRESS>"
+export BUILDER="<ADDRESS>"
 
 # OPTIONAL
 # The IPFS hash of the default image to use in minted NFTs. Default is a generic Radicle image.
-export $DEFAULT_IPFS_IMG="<IPFS_HASH>"
+export DEFAULT_IPFS_IMG="<IPFS_HASH>"
 
 # OPTIONAL
 # The address besides `$DRIPS_GOVERNANCE` which can change
 # the default image IPFS hash of the default NFT images builder.
 # If not set, only `$DRIPS_GOVERNANCE` can do that.
-export $IPFS_OWNER="<ADDRESS>"
+export IPFS_OWNER="<ADDRESS>"
 
 # OPTIONAL
 # Address of the DripsHub proxy to use. If not set, a new instance is deployed.
-export $DRIPS_HUB="<ADDRESS>"
+export DRIPS_HUB="<ADDRESS>"
 
 # OPTIONAL
 # Address of the initial DripsHub logic contract to use. If not set, a new instance is deployed.
-export $DRIPS_HUB_LOGIC="<ADDRESS>"
+export DRIPS_HUB_LOGIC="<ADDRESS>"
 
 # OPTIONAL
 # Cycle length to set in the deployed DripsHub logic. Default is 1 week.
-export $CYCLE_SECS="<SECONDS>"
+export CYCLE_SECS="<SECONDS>"
 
 # OPTIONAL
 # Address of Dai reserve to use. If not set, a new instance is deployed.
-export $RESERVE="<ADDRESS>"
+export RESERVE="<ADDRESS>"
 ```
 
 Run deployment:
@@ -166,3 +166,29 @@ export ETH_RPC_URL='https://rpc-mumbai.maticvigil.com/'
 
 To publish smart contracts to `https://mumbai.polygonscan.com/` you need to
 use the API key generated for an account on regular `https://polygonscan.com/`.
+
+### Deploying to Optimism testnet
+
+Optimism is supported by dapp.tools' `seth` in versions **newer than** 0.11.0.
+If no such version is officially released yet, you must install it from `master`:
+
+```bash
+git clone git@github.com:dapphub/dapptools.git
+cd dapptools
+nix-env -iA solc dapp seth hevm -f .
+```
+
+As of now gas estimation isn't working and you need to set it manually to an arbitrary high value:
+
+```bash
+export ETH_GAS=10000000
+```
+
+For deployment you can use the public RPC endpoint:
+
+```bash
+export ETH_RPC_URL='https://kovan.optimism.io'
+```
+
+To publish smart contracts to `https://kovan-optimistic.etherscan.io` you need to
+use the API key generated for an account on regular `https://optimistic.etherscan.io`.
