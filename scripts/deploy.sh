@@ -95,7 +95,7 @@ seth send $RADICLE_REGISTRY 'transferOwnership(address)()' $GOVERNANCE_EXECUTOR
 
 message Check Correct Governance
 echo "Governance (Multi-Sig): $GOVERNANCE"
-echo "Governance Contract controlled by Onwer: $(seth call $DRIPS_GOVERNANCE 'owner()(address)')"
+echo "Governance Contract controlled by Owner: $(seth call $DRIPS_GOVERNANCE 'owner()(address)')"
 echo "Governance Executor:                     $GOVERNANCE_EXECUTOR"
 echo "DRIPS_HUB                         Admin: $(seth call $DRIPS_HUB 'admin()(address)')"
 echo "RESERVE                           Owner: $(seth call $RESERVE 'owner()(address)')"
