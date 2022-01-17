@@ -16,6 +16,22 @@ addValuesToFile() {
     printf %s "$result" > "$1"
 }
 
+deploy() {
+    DEPLOYMENT_ADDR=$(dapp create "$1" "${@:2}")
+    verify "$1" "$DEPLOYMENT_ADDR" "${@:2}"
+    echo "$DEPLOYMENT_ADDR"
+}
+
+verify() {
+  if [ -n "$ETHERSCAN_API_KEY" ]
+  then
+      sleep 5 # give etherscan some time to process the block
+      dapp verify-contract --async "$@"
+  else
+      echo "ETHERSCAN_API_KEY not provided, skipping verification" >&2
+  fi
+}
+
 DEPLOYMENT_FILE=${DEPLOYMENT_FILE:-./deployment_$(seth chain).json}
 GOVERNANCE=${GOVERNANCE:-$ETH_FROM}
 DEFAULT_IPFS_IMG=${DEFAULT_IPFS_IMG:-QmcjdWo3oDYPGdLCdmEpGGpFsFKbfXwCLc5kdTJj9seuLx}
@@ -24,6 +40,7 @@ LOCK_SECS=${LOCK_SECS:-$(( 30 * 24 * 60 * 60 ))} # 30 days
 
 message Deployment Config
 echo "Governance Address:       $GOVERNANCE"
+echo "Polygon bridge FxChild:   $POLYGON_FX_CHILD"
 echo "DAI Address:              $DAI"
 echo "Default IPFS Hash image:  $DEFAULT_IPFS_IMG"
 echo "Config Cycle Secs:        $CYCLE_SECS"
@@ -46,22 +63,37 @@ message Build Contracts
 dapp build
 
 # deploy Test Dai if not defined
-[ -z "$DAI" ] && DAI=$(dapp create Dai)
+[ -z "$DAI" ] && DAI=$(deploy 'lib/radicle-drips-hub/src/test/TestDai.sol:Dai')
 
-[ -z "$DRIPS_GOVERNANCE" ] && DRIPS_GOVERNANCE=$(dapp create Governance $GOVERNANCE)
+if [ -z "$DRIPS_GOVERNANCE" ]
+then
+    # Polygon deployment governed from L1
+    if [ -n "$POLYGON_FX_CHILD" ]
+    then
+        DRIPS_GOVERNANCE=$(deploy 'src/governance/governance.sol:Governance' $ETH_FROM)
+        # Messages received from $GOVERNANCE on L1 over $POLYGON_FX_CHILD will be scheduled on $DRIPS_GOVERNANCE
+        POLYGON_SPELL_SCHEDULER=$(deploy 'src/governance/polygonSpellScheduler.sol:PolygonSpellScheduler' $GOVERNANCE $POLYGON_FX_CHILD $DRIPS_GOVERNANCE)
+        echo "Polygon Spell Scheduler Contract: $POLYGON_SPELL_SCHEDULER"
+        seth send $DRIPS_GOVERNANCE 'transferOwnership(address)()' $POLYGON_SPELL_SCHEDULER
+    else
+        DRIPS_GOVERNANCE=$(deploy 'src/governance/governance.sol:Governance' $GOVERNANCE)
+    fi
+    GOVERNANCE_EXECUTOR=$(seth call $DRIPS_GOVERNANCE 'executor()(address)')
+    verify 'src/governance/governance.sol:Executor' $GOVERNANCE_EXECUTOR
+else
+    GOVERNANCE_EXECUTOR=$(seth call $DRIPS_GOVERNANCE 'executor()(address)')
+fi
 echo "Drips Governance Contract: $DRIPS_GOVERNANCE"
-
-GOVERNANCE_EXECUTOR=$(seth call $DRIPS_GOVERNANCE 'executor()(address)')
 echo "Governance Executor Contract: $GOVERNANCE_EXECUTOR"
 
 message Drips Contracts Deployment
 
-[ -z "$DRIPS_HUB_LOGIC" ] && DRIPS_HUB_LOGIC=$(dapp create DaiDripsHub $CYCLE_SECS $DAI)
+[ -z "$DRIPS_HUB_LOGIC" ] && DRIPS_HUB_LOGIC=$(deploy 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $CYCLE_SECS $DAI)
 echo "Drips Hub Logic Contract: $DRIPS_HUB_LOGIC"
-[ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(dapp create ManagedDripsHubProxy $DRIPS_HUB_LOGIC $ETH_FROM)
+[ -z "$DRIPS_HUB" ] && DRIPS_HUB=$(deploy 'lib/radicle-drips-hub/src/ManagedDripsHub.sol:ManagedDripsHubProxy' $DRIPS_HUB_LOGIC $ETH_FROM)
 echo "Drips Hub Contract: $DRIPS_HUB"
 
-[ -z "$RESERVE" ] && RESERVE=$(dapp create DaiReserve $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB)
+[ -z "$RESERVE" ] && RESERVE=$(deploy 'lib/radicle-drips-hub/src/DaiReserve.sol:DaiReserve' $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB)
 echo "Reserve Contract: $RESERVE"
 
 # set reserve dependency in drips hub
@@ -70,7 +102,7 @@ seth send $DRIPS_HUB 'setReserve(address)()' $RESERVE
 # give hub ownership to executor
 seth send $DRIPS_HUB 'changeAdmin(address)()' $GOVERNANCE_EXECUTOR
 
-[ -z "$BUILDER" ] && BUILDER=$(dapp create DefaultIPFSBuilder $ETH_FROM "\"$DEFAULT_IPFS_IMG\"")
+[ -z "$BUILDER" ] && BUILDER=$(deploy 'src/builder/ipfsBuilder.sol:DefaultIPFSBuilder' $ETH_FROM "\"$DEFAULT_IPFS_IMG\"")
 echo "Builder Contract: $BUILDER"
 
 # ownership permissions Builder
@@ -80,11 +112,11 @@ seth send $BUILDER 'deny(address)' $ETH_FROM
 
 
 # Set initial ownership to the deployer address
-[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(dapp create RadicleRegistry $BUILDER $ETH_FROM)
+[ -z "$RADICLE_REGISTRY" ] && RADICLE_REGISTRY=$(deploy 'src/registry.sol:RadicleRegistry' $BUILDER $ETH_FROM)
 
 echo "Radicle Registry Contract: $RADICLE_REGISTRY"
 
-[ -z "$TOKEN_TEMPLATE" ] && TOKEN_TEMPLATE=$(dapp create DripsToken $DRIPS_HUB $RADICLE_REGISTRY $LOCK_SECS)
+[ -z "$TOKEN_TEMPLATE" ] && TOKEN_TEMPLATE=$(deploy 'src/token.sol:DripsToken' $DRIPS_HUB $RADICLE_REGISTRY $LOCK_SECS)
 
 echo "Token template Contract: $TOKEN_TEMPLATE"
 
@@ -95,12 +127,14 @@ seth send $RADICLE_REGISTRY 'transferOwnership(address)()' $GOVERNANCE_EXECUTOR
 
 message Check Correct Governance
 echo "Governance (Multi-Sig): $GOVERNANCE"
-echo "Governance Contract controlled by Owner: $(seth call $DRIPS_GOVERNANCE 'owner()(address)')"
-echo "Governance Executor:                     $GOVERNANCE_EXECUTOR"
-echo "DRIPS_HUB                         Admin: $(seth call $DRIPS_HUB 'admin()(address)')"
-echo "RESERVE                           Owner: $(seth call $RESERVE 'owner()(address)')"
-echo "RADICLE_REGISTRY                  Owner: $(seth call $RADICLE_REGISTRY 'owner()(address)')"
-echo "BUILDER                           Owner: $(seth call $BUILDER 'owner()(address)')"
+echo "Governance Contract controlled by         Owner: $(seth call $DRIPS_GOVERNANCE 'owner()(address)')"
+[ -n "$POLYGON_SPELL_SCHEDULER" ] && echo "Polygon spell scheduler controlled by L1  Owner: $(seth call $POLYGON_SPELL_SCHEDULER 'owner()(address)')"
+echo "Governance Executor                            : $GOVERNANCE_EXECUTOR"
+echo "DRIPS_HUB                                 Admin: $(seth call $DRIPS_HUB 'admin()(address)')"
+echo "RESERVE                                   Owner: $(seth call $RESERVE 'owner()(address)')"
+echo "RADICLE_REGISTRY                          Owner: $(seth call $RADICLE_REGISTRY 'owner()(address)')"
+echo "BUILDER                                   Owner: $GOVERNANCE_EXECUTOR"
+[ -n "$IPFS_OWNER" ] && echo "BUILDER                                     Owner: $IPFS_OWNER"
 
 touch $DEPLOYMENT_FILE
 addValuesToFile $DEPLOYMENT_FILE <<EOF
@@ -119,22 +153,12 @@ addValuesToFile $DEPLOYMENT_FILE <<EOF
     "CONTRACT_DRIPS_GOVERNANCE"  : "$DRIPS_GOVERNANCE"
 }
 EOF
+[ -n "$POLYGON_SPELL_SCHEDULER" ] && addValuesToFile $DEPLOYMENT_FILE <<EOF
+{
+    "POLYGON_SPELL_SCHEDULER"    : "$POLYGON_SPELL_SCHEDULER"
+}
+EOF
 
 message Deployment JSON: $DEPLOYMENT_FILE
 
 cat $DEPLOYMENT_FILE
-
-message Verify Contracts on Etherscan
-if [ -n "$ETHERSCAN_API_KEY" ]; then
-  dapp verify-contract --async 'src/governance/governance.sol:Governance' $DRIPS_GOVERNANCE $GOVERNANCE
-  dapp verify-contract --async 'src/governance/governance.sol:Executor' $GOVERNANCE_EXECUTOR
-  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiDripsHub.sol:DaiDripsHub' $DRIPS_HUB_LOGIC $CYCLE_SECS $DAI
-  dapp verify-contract --async 'lib/radicle-drips-hub/src/ManagedDripsHub.sol:ManagedDripsHubProxy' $DRIPS_HUB $DRIPS_HUB_LOGIC $ETH_FROM
-  dapp verify-contract --async 'lib/radicle-drips-hub/src/DaiReserve.sol:DaiReserve' $RESERVE $DAI $GOVERNANCE_EXECUTOR $DRIPS_HUB
-  dapp verify-contract --async 'src/registry.sol:RadicleRegistry' $RADICLE_REGISTRY $BUILDER $ETH_FROM
-  dapp verify-contract --async 'src/builder/ipfsBuilder.sol:DefaultIPFSBuilder' $BUILDER $GOVERNANCE "\"$DEFAULT_IPFS_IMG\""
-  TOKEN_TEMPLATE=$(seth call $RADICLE_REGISTRY 'dripsTokenTemplate()(address)')
-  dapp verify-contract --async 'src/token.sol:DripsToken' $TOKEN_TEMPLATE $DRIPS_HUB $RADICLE_REGISTRY $LOCK_SECS
-else
-  echo "No ETHERSCAN_API_KEY for contract verification provided"
-fi

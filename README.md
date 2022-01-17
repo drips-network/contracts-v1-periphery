@@ -80,59 +80,66 @@ Set up environment variables configuring the deployed contracts:
 # OPTIONAL
 # Address of Dai token to use.
 # If not set, a dummy instance is deployed where `ETH_FROM` holds all the tokens.
-export $DAI="<ADDRESS>"
+export DAI="<ADDRESS>"
 
 # OPTIONAL
 # Address of the governance DAO to use. If not set, `ETH_FROM` is used.
-export $GOVERNANCE="<ADDRESS>"
+export GOVERNANCE="<ADDRESS>"
+
+# OPTIONAL
+# Address of the Polygon bridge Fx Child contract to accept governance messages from.
+# Use only on Polygon network to keep GOVERNANCE on L1.
+# If set, an intermediate contract will be deployed passing messages to DRIPS_GOVERNANCE.
+# If not set, DRIPS_GOVERNANCE is controlled by GOVERNANCE directly.
+export POLYGON_FX_CHILD="<ADDRESS>"
 
 # OPTIONAL
 # Address of a governance timelock contract to use. If not set, a new instance is deployed.
-export $DRIPS_GOVERNANCE="<ADDRESS>"
+export DRIPS_GOVERNANCE="<ADDRESS>"
 
 # OPTIONAL
 # Address of NFT registry to use. If not set, a new instance is deployed.
-export $RADICLE_REGISTRY="<ADDRESS>"
+export RADICLE_REGISTRY="<ADDRESS>"
 
 # OPTIONAL
 # Address of the initial NFT logic template to use in the NFT registry when deploying a new token.
 # If not set, a new instance is deployed.
-export $TOKEN_TEMPLATE="<ADDRESS>"
+export TOKEN_TEMPLATE="<ADDRESS>"
 
 # OPTIONAL
 # Streaming NFT minimum duration. Default is 30 days.
-export $LOCK_SECS="<SECONDS>"
+export LOCK_SECS="<SECONDS>"
 
 # OPTIONAL
 # Address of the default NFT images builder to use.
 # If not set, a new instance using IPFS images is deployed.
-export $BUILDER="<ADDRESS>"
+export BUILDER="<ADDRESS>"
 
 # OPTIONAL
 # The IPFS hash of the default image to use in minted NFTs. Default is a generic Radicle image.
-export $DEFAULT_IPFS_IMG="<IPFS_HASH>"
+export DEFAULT_IPFS_IMG="<IPFS_HASH>"
 
 # OPTIONAL
 # The address besides `$DRIPS_GOVERNANCE` which can change
 # the default image IPFS hash of the default NFT images builder.
 # If not set, only `$DRIPS_GOVERNANCE` can do that.
-export $IPFS_OWNER="<ADDRESS>"
+export IPFS_OWNER="<ADDRESS>"
 
 # OPTIONAL
 # Address of the DripsHub proxy to use. If not set, a new instance is deployed.
-export $DRIPS_HUB="<ADDRESS>"
+export DRIPS_HUB="<ADDRESS>"
 
 # OPTIONAL
 # Address of the initial DripsHub logic contract to use. If not set, a new instance is deployed.
-export $DRIPS_HUB_LOGIC="<ADDRESS>"
+export DRIPS_HUB_LOGIC="<ADDRESS>"
 
 # OPTIONAL
 # Cycle length to set in the deployed DripsHub logic. Default is 1 week.
-export $CYCLE_SECS="<SECONDS>"
+export CYCLE_SECS="<SECONDS>"
 
 # OPTIONAL
 # Address of Dai reserve to use. If not set, a new instance is deployed.
-export $RESERVE="<ADDRESS>"
+export RESERVE="<ADDRESS>"
 ```
 
 Run deployment:
