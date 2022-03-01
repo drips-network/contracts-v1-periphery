@@ -15,6 +15,9 @@ contract MetaDataTest is DSTest {
     function testStoreMultiHash() public {
         // multiHash base58 example "QmYphyME6tvpmLUaz2zG7zNGJNnDpPkecj5Egg3eERDafA";
         // in hex 12209bc4d23950b5a91c9dc71883209424a145574a5e0f9aabd34a5f4ffc7f759409
+        // 0-1:  hashFunction
+        // 1-2:  size
+        // 2-34: hash
         uint8 hashFunction = uint8(0x12);
         uint8 size = uint8(0x20);
         bytes32 digest = bytes32(

@@ -6,8 +6,11 @@ contract MetaData {
 
     /// @notice publish an IPFS hash as an event
     /// @param multiHash as bytes array
-    /// more information: https://github.com/multiformats/multihash
     function publish(bytes calldata multiHash) external {
+        // correct multiHash construction see https://github.com/multiformats/multihash
+        // 0-1  bytes:  hashFunction
+        // 1-2  bytes:  size
+        // 2-34 bytes:  hash (in most cases 32 bytes but not guranteed)
         emit MultiHash(msg.sender, multiHash);
     }
 }
