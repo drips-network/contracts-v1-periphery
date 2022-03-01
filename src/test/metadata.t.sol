@@ -20,6 +20,7 @@ contract MetaDataTest is DSTest {
         bytes32 digest = bytes32(
             0x9bc4d23950b5a91c9dc71883209424a145574a5e0f9aabd34a5f4ffc7f759409
         );
-        metadata.publish(hashFunction, size, digest);
+        bytes memory multiHash = abi.encode(hashFunction, size, digest);
+        metadata.publish(multiHash);
     }
 }

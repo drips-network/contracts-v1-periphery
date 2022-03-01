@@ -2,13 +2,12 @@
 pragma solidity ^0.8.7;
 
 contract MetaData {
-    event MultiHash(address indexed addr, uint8 hashFunction, uint8 size, bytes32 digest);
+    event MultiHash(address indexed addr, bytes multiHash);
 
-    function publish(
-        uint8 hashFunction,
-        uint8 size,
-        bytes32 digest
-    ) external {
-        emit MultiHash(msg.sender, hashFunction, size, digest);
+    /// @notice publish an IPFS hash as an event
+    /// @param multiHash as bytes array
+    /// more information: https://github.com/multiformats/multihash
+    function publish(bytes calldata multiHash) external {
+        emit MultiHash(msg.sender, multiHash);
     }
 }
