@@ -26,4 +26,15 @@ contract MetaDataTest is DSTest {
         bytes memory multiHash = abi.encode(hashFunction, size, digest);
         metadata.publish(multiHash);
     }
+
+    function testStoreMultiHashWithId() public {
+        bytes32 id = "testId";
+        uint8 hashFunction = uint8(0x12);
+        uint8 size = uint8(0x20);
+        bytes32 digest = bytes32(
+            0x9bc4d23950b5a91c9dc71883209424a145574a5e0f9aabd34a5f4ffc7f759409
+        );
+        bytes memory multiHash = abi.encode(hashFunction, size, digest);
+        metadata.publish(id, multiHash);
+    }
 }
